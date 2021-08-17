@@ -8,7 +8,7 @@ link_directories(/usr/local/lib)
 file(GLOB SOURCES verapak_cpp_lib/src/*.cpp)
 add_library(verapak_utils SHARED ${SOURCES})
 
-target_link_libraries(verapak_utils boost_python36 boost_system python3.6m)
+target_link_libraries(verapak_utils boost_python36 boost_system python3.6m boost_numpy36)
 
 set_target_properties(verapak_utils PROPERTIES PREFIX "")
 
