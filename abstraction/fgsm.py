@@ -19,12 +19,12 @@ class FGSMEngine(ae.AbstractionEngine):
         self.granularity = granularity
 
     def abstraction_impl(self, region, num_abstractions):
-        center = CenterPoint().abstraction_impl(region, 1)
-        if len(center) == 0:
-            return []
-        else:
-            center = center[0] # Should only be one point
-            gradient_sign = np.sign(self.gradient(center))
+        center = CenterPoint().abstraction_impl(region, 1)              # Get center point
+        if len(center) == 0:                                            # If no input:
+            return []                                                       # Return no abstractions
+        else:                                                           # Otherwise:
+            center = center[0] # Should only be one point                   # Get actual center *point*
+            gradient_sign = np.sign(self.gradient(center))                  # Get normalized gradient
 
             min_dimension, min_dimension_index = _min_dim(region) # TODO: In original, uses std::distance --- Why?
             max_radius = min_dimension.second - min_dimension.first / 1.25 # TODO: Why divide by 1.25
@@ -36,7 +36,7 @@ class FGSMEngine(ae.AbstractionEngine):
 
             for i in range(0, num_abstractions):
                 current_epsilon = granularity[min_dimension_index] * np.random.Generator.integers(e1_lowerbound, e1_upperbound)
-                retVal.append(self._fgsm_method(region, center, gradient_sign, current_epsilon))
+                retVal.append(self._next_point(region, center, gradient_sign, current_epsilon))
             
             return retVal
 
@@ -49,14 +49,14 @@ class FGSMEngine(ae.AbstractionEngine):
 
 class ModFGSM(FGSMEngine):
 
-    def __init__(self, gradient_function, granularity, dim_select_strategy, percent_fgsm, fallback_strategy):
+    def __init__(self, gradient_function, granularity, dim_select_strategy, percent_fgsm, fallback_strategy=None):
         super.__init__(gradient_function, granularity)
         self.dim_select_strategy = dim_select_strategy
         self.percent_fgsm = percent_fgsm
         self.fallback_strategy = fallback_strategy
 
     def _setup(self, region, num_abstractions):
-        if region[1] == min_dimension || max_radius <= granularity[min_dimension_index]:
+        if self.fallback_strategy is not None and self.fallback_strategy.should_fallback(region, num_abstractions):
             return self.fallback_strategy(region, num_abstractions)
 
         dims = self.dim_select_strategy(region, region.size())
