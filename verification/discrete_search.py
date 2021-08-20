@@ -1,4 +1,4 @@
-import verification.ve
+import verification.ve as ve
 
 class DiscreteSearch(ve.VerificationEngine):
 
