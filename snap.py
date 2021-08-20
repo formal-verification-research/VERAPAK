@@ -1,22 +1,12 @@
 import numpy as np
 
-def _amax_of(*points):
-    current_max = points[0]
-    for i in range(1, len(points)):
-        current_max = np.amax(np.vstack([current_max, points[i]]), axis=0)
-    return current_max
-
-def _amin_of(*points):
-    current_min = points[0]
-    for i in range(1, len(points)):
-        current_min = np.amin(np.vstack([current_min, points[i]]), axis=0)
-    return current_min
-
-def region_to_domain(region, domain):
-    return _amin_of(_amax_of(region[0], domain[0]), domain[1]), _amax_of(_amin_of(region[1], domain[1]), domain[0])
+def region_to_domain(region, domain):i
+    return np.clip(region[0], domain[0], domain[1]), np.clip(region[1], domain[0], domain[1])
+        # domain[0] <= region[0] <= domain[1]
+        # domain[0] <= region[1] <= domain[1]
 
 def point_to_domain(point, domain):
-    return _amin_of(_amax_of(point, domain[0]), domain[1])
+    return np.clip(point, domain[0], domain[1]) # domain[0] <= point <= domain[1]
 
 def to_nearest_valid_point(point, initial_point, granularity):
     nearest = point[:]
@@ -25,10 +15,10 @@ def to_nearest_valid_point(point, initial_point, granularity):
     elif type(granularity) != type(np.empty(0)):
         granularity = np.full(point.size, granularity)
 
-    nearest -= initial_point
-    nearest /= granularity
-    nearest = np.around(nearest)
-    nearest *= granularity
-    nearest += initial_point
+    nearest -= initial_point            # Set the initial point as the origin
+    nearest /= granularity              # Scale the grid such that the granularity is an integer step in any direction
+    nearest = np.around(nearest)        # Round to the nearest grid point
+    nearest *= granularity              # Undo the scaling
+    nearest += initial_point            # Reset the origin
 
     return nearest
