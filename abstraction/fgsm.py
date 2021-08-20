@@ -1,15 +1,13 @@
-import abstraction.ae
-import CenterPoint from abstraction.center_point
+import abstraction.ae as ae
+from abstraction.center_point import CenterPoint
 import numpy as np
 
 def _min_dim(region):
-    minimum = None
     minimum_index = None
-    for i, subregion in enumerate(region):
-        if minimum == None or subregion.second - subregion.first < minimum.second - minimum.first:
-            minimum = subregion
+    for i in range(region[0].size):
+        if minimum_index == None or region[1][i] - region[0][i] < region[1][minimum_index] - region[0][minimum_index]:
             minimum_index = i
-    return minimum, minimum_index
+    return [region[0][i], region[1][i]], minimum_index
 
 
 class FGSMEngine(ae.AbstractionEngine):
@@ -31,9 +29,9 @@ class FGSMEngine(ae.AbstractionEngine):
             gradient_sign = np.sign(self.gradient(center))                  # Get normalized gradient
 
             min_dimension, min_dimension_index = _min_dim(region) # TODO: In original, uses std::distance --- Why?
-            max_radius = min_dimension.second - min_dimension.first / 1.25 # TODO: Why divide by 1.25
+            max_radius = (min_dimension[1] - min_dimension[0]) / 1.25 # TODO: Why divide by 1.25
 
-            self._setup(region, num_abstractions, center)
+            self._setup(region, num_abstractions)
 
             e1_lowerbound = 1
             e1_upperbound = int(max_radius / granularity[min_dimension_index])
@@ -56,25 +54,25 @@ class FGSMEngine(ae.AbstractionEngine):
 class ModFGSM(FGSMEngine):
 
     def __init__(self, gradient_function, granularity, dim_select_strategy, percent_fgsm, fallback_strategy=None):
-        super.__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
+        super().__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
 
         self.dim_select_strategy = dim_select_strategy
         self.percent_fgsm = percent_fgsm
 
-    def _setup(self, region, num_abstractions, center):
-        dims = self.dim_select_strategy(region, center.size())
-        num_dims_fgsm = self.percent_fgsm * center.size()
+    def _setup(self, region, num_abstractions):
+        dims = self.dim_select_strategy(region, region[0].size)
+        num_dims_fgsm = self.percent_fgsm * region[0].size
 
-        self.M = np.zeros(center.size())
-        self.M_not = np.one(center.size)
+        self.M = np.zeros(region[0].size)
+        self.M_not = np.ones(region[0].size)
 
         for i in range(0, num_dims_fgsm):
             self.M[dims[i]] = 1
             self.M_not[dims[i]] = 0
 
     def _next_point(self, region, center, gradient_sign, epsilon):
-        R = np.random.Generator.integers(0, 1, center.size(), endpoint=True)
-        for i in range(0, center.size()):
+        R = np.random.Generator.integers(0, 1, center.size, endpoint=True)
+        for i in range(0, center.size):
             if (R[i] == 0):
                 R[i] = -1
 
@@ -86,12 +84,12 @@ class ModFGSM(FGSMEngine):
         return generated_point
 
 
-class RplusFGSM(ae.AbstractionEngine):
+class RplusFGSM(FGSMEngine):
 
     def __init__(self, gradient_function, granularity, epsilon, fallback_strategy=None):
-        super.__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
+        super().__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
 
-    def _setup(self, region, num_abstractions, center):
+    def _setup(self, region, num_abstractions):
         pass
 
     def _next_point(self, region, center, gradient_sign, epsilon):
