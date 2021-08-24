@@ -9,6 +9,7 @@
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 
+namespace python = boost::python;
 namespace numpy = boost::python::numpy;
 
 namespace grid {
@@ -50,6 +51,7 @@ using region_stack = std::vector<grid::region>;
 struct RegionSet {
   region_set region_set_internal;
   bool insert(numpy::ndarray const &, numpy::ndarray const &);
+  python::tuple get_and_remove_region_containing_point(numpy::ndarray const &);
 };
 
 #endif
