@@ -1,44 +1,170 @@
 import argparse # https://docs.python.org/3/library/argparse.htm
 import sys
 import os
+import pkgutil
 
-parser = argparse.ArgumentParser(prog="VERAPAK", description="")
-parser.add_argument("filepath", type=argparse.FileType('r'), help="Path to the config file") # Places the config file in parsed_args.filepath, already opened and in read mode.
-
-def directory(string):
+def directoryType(string):
     if os.path.isdir(string):
         return string
     else:
         raise ValueError(string + " is not a valid directory")
 
-fileparser = argparse.ArgumentParser()
-fileparser.add_argument("output_directory", type=directory, help="The path where adversarial examples should be sent")
+def get_strategy(module):
+    if module in ["dimension_ranking", "partitioning"]:
+        return lambda name : name
+    return lambda name : __import__(f"{module}.{name}")
 
-graphgroup = fileparser.add_argument_group("graph")
-graphgroup.add_argument("graph", type=argparse.FileType('r'), help="Path to the graph")
-graphgroup.add_argument("-i", "--input", type=str, help="Graph's input node")
-graphgroup.add_argument("-o", "--output", type=str, help="Graph's output node")
-rad = graphgroup.add_mutually_exclusive_group(required=True)
-rad.add_argument("--radius", nargs=1, help="Single radius to apply to all dimensions")
-rad.add_argument("--radii", nargs="+", help="Per-dimension radii, separated by either commas or spaces") # Pre-parse, split on commas or set nargs to 1
-gran = graphgroup.add_mutually_exclusive_group(required=True)
-gran.add_argument("--granularity", nargs=1, help="Single granularity to apply to all dimensions")
-gran.add_argument("--granularities", nargs="+", help="Per-dimension granularities, separated by commas or spaces") # Pre-parse, split on commas or set nargs to 1
+def get_strategy_choices(module):
+    interface_name = ""
+    for word in module.split("_"):
+        interface_name += word[0]
+    interface_name += "e"
+    submodules = []
+    for submodule in pkgutil.iter_modules([module]):
+        if submodule.name != interface_name:
+            submodules.append(submodule.name)
+    return "(" + (" | ".join(submodules)) + " | ...)"
+
+class PrintAction(argparse.Action):
+    def __init__(self,
+                 option_strings,
+                 string,
+                 dest=argparse.SUPPRESS,
+                 default=argparse.SUPPRESS,
+                 help=None):
+        super(PrintAction, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            help=help)
+        self.string = string
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        print(self.string)
+        parser.exit()
+
+class FileParser:
+    def __init__(self, arg_list, defaults):
+        self.required_str = "\033[31mREQUIRED\033[0m"
+        self.arg_list = arg_list
+
+        self.arg_count = len([arg for arg in self.arg_list if arg is not None])
+
+        self.arg_dict = dict()
+        for arg in self.arg_list:
+            if arg is None:
+                continue
+            self.arg_dict[arg['name']] = arg
+        self.defaults = defaults
+
+    def get_help(self, description=""):
+        help_string = description
+        if len(help_string) > 0:
+            help_string += "\n\n"
+        for arg in self.arg_list:
+            if arg is None:
+                help_string += "\n"
+                continue
+            help_string += f"{arg['name']} :: {arg['help']}"
+            if 'required' in arg and arg['required']:
+                help_string += f" {self.required_str}"
+            elif 'default' in arg and arg['default'] is not None:
+                help_string += f" (Default: {self.defaults[arg['default']]})"
+            if 'options' in arg:
+                help_string += f"\n\t\t Options: "
+                help_string += arg['options']
+            help_string += "\n"
+        return help_string
+    
+    def parse_lines(self, lines):
+        result = dict()
+        line_num = 0
+        for line in lines:
+            line_num += 1
+            if line.lstrip().startswith("#") or len(line.strip()) == 0:
+                continue
+            if "::" not in line:
+                raise ValueError(f"Key/value separator \"::\" not found on line {line_num}")
+            key = line.split("::", 1)[0].strip()
+            value = line.split("::", 1)[1].strip()
+            if not key in self.arg_dict:
+                raise ValueError(f"No variable named \"{key}\" on line {line_num}")
+            else:
+                result[key] = self.arg_dict[key]['type'](value)
+
+        for arg in self.arg_list:
+            if arg is not None and arg['name'] not in result:
+                if arg.has_key('default'):
+                    if not arg['required'] and arg['default'] is not None and arg['default'] != argparse.SUPPRESS:
+                        result[arg['name']] = self.default[arg['default']]
+                    elif arg['default'] == argparse.SUPPRESS:
+                        result[arg['name']] = self.default[arg['short']]
+
+        return result
+
+    def parse_overhead(self, args, prog, prog_name=None, description=None):
+        parser = argparse.ArgumentParser(prog=prog, description=description, usage="%(prog)s [-h] [-f?] [options] filepath")
+        parser.add_argument("-f?", string=self.get_help(description=f"{prog_name} Config File Help"), action=PrintAction, dest="filehelp", help="show config file help message and exit")
+        parser.add_argument("filepath", type=argparse.FileType('r'), help="Path to the config file")
+        for arg in self.arg_list:
+            if arg is not None and arg['flag']:
+                if 'default' in arg and arg['default'] is not None and arg['default'] != argparse.SUPPRESS:
+                    default = self.defaults[arg['default']]
+                else:
+                    default = arg['default']
+                parser.add_argument("--" + arg['short'], type=arg['type'], help=arg['help'], required=False, default=default)
+        namespace = parser.parse_args(args)
+        if namespace.filehelp:
+            print(get_help())
+            sys.exit(0)
+        self.defaults = vars(namespace)
 
 
-# TODO: Make everything file-based as opposed to command line arguments (except maybe a few smaller, highly-probable-to-change flags like strategies)
+# To add a flag, the value must be optional and have a default value.
+ARG_LIST = [
+        {'flag': True, 'short': 'dir', 'name': "Output Directory", 'type': directoryType, 'help': "The path where adversarial examples should be sent", 'required': True, 'default': argparse.SUPPRESS},
+        None,
+        {'flag': False, 'short': 'grf', 'name': "Graph",       'type': argparse.FileType('r'), 'help': "Path to the graph",                                                  'required': True},
+        {'flag': False, 'short': 'in',  'name': "Input",       'type': str,                    'help': "Graph's input node (If not given, will try to guess)",               'required': False, 'default': None},
+        {'flag': False, 'short': 'out', 'name': "Output",      'type': str,                    'help': "Graph's output node (If not given, will try to guess)",              'required': False, 'default': None},
+        {'flag': False, 'short': 'rad', 'name': "Radius",      'type': str,                    'help': "Single radius or per-dimension radii, comma separated",              'required': True},
+        {'flag': False, 'short': 'grn', 'name': "Granularity", 'type': str,                    'help': "Single granularity or per-dimension granularities, comma separated", 'required': True},
+        None,
+        {'flag': True, 'short': 'thr', 'name': "Threads",      'type': int,   'help': "Number of threads to use",                           'required': False, 'default': 'thr'},
+        {'flag': True, 'short': 'abs', 'name': "Abstractions", 'type': int,   'help': "Number of abstraction points to generate each pass", 'required': False, 'default': 'abs'},
+        {'flag': True, 'short': 'bal', 'name': "FGSM Balance", 'type': float, 'help': "FGSM vs. Random balance factor",                     'required': False, 'default': 'bal'},
+        None,
+        {'flag': True, 'short': 's-ver', 'name': "Verification Strategy",      'type': get_strategy('verification'),      'help': "Which verification strategy to use",      'required': False, 'default': 's-ver',      'options': get_strategy_choices('verification')},
+        {'flag': True, 'short': 's-dim', 'name': "Dimension-Ranking Strategy", 'type': get_strategy('dimension_ranking'), 'help': "Which dimension-ranking strategy to use", 'required': False, 'default': 's-dim', 'options': get_strategy_choices('dimension_ranking')},
+        {'flag': True, 'short': 's-abs', 'name': "Abstraction Strategy",       'type': get_strategy('abstraction'),       'help': "Which abstraction strategy to use",       'required': False, 'default': 's-abs',       'options': get_strategy_choices('abstraction')},
+        {'flag': True, 'short': "s-par", 'name': "Partitioning Strategy",      'type': get_strategy('partitioning'),      'help': "Which partitioning strategy to use",      'required': False, 'default': 's-par',      'options': get_strategy_choices('partitioning')},
+]
 
-def parse_args(args, exit_on_error=True):
-    global parsed_args
-    parsed_args = parser.parse_args(args)
-    config_lines = parsed_args.filepath.readlines()
 
+def _getThreads():
+    """ Returns the number of available threads on a posix/win based system """
+    if sys.platform == 'win32':
+        return (int)(os.environ['NUMBER_OF_PROCESSORS'])
+    else:
+        return (int)(os.popen('grep -c cores /proc/cpuinfo').read())
 
-#    for line in config_lines:
-            
+ABSOLUTE_DEFAULTS = {
+        'thr': _getThreads(),
+        'abs': 10,
+        'bal': 0.9,
+        's-ver': "discrete_search",
+        's-dim': "gradient_based",
+        's-abs': "fgsm",
+        's-par': "largest_first",
+}
 
-#if __name__ == "__main__":
-#    parse_args(sys.argv[1:])
+def parse_args(args, prog=None):
+    fp = FileParser(ARG_LIST, ABSOLUTE_DEFAULTS)
+    fp.parse_overhead(args, prog=prog, prog_name="VERAPAK", description="")
+
+if __name__ == "__main__":
+    parse_args(sys.argv[1:])
 
 
 
