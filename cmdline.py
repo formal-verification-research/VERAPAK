@@ -12,7 +12,7 @@ def directoryType(string):
 def get_strategy(module):
     if module in ["dimension_ranking", "partitioning"]:
         return lambda name : name
-    return lambda name : __import__(f"{module}.{name}")
+    return lambda name : getattr(__import__(f"{module}.{name}"), name)
 
 def get_strategy_choices(module):
     interface_name = ""
@@ -95,11 +95,16 @@ class FileParser:
 
         for arg in self.arg_list:
             if arg is not None and arg['name'] not in result:
-                if arg.has_key('default'):
-                    if not arg['required'] and arg['default'] is not None and arg['default'] != argparse.SUPPRESS:
-                        result[arg['name']] = self.default[arg['default']]
+                if 'default' in arg:
+                    if not arg['required'] and arg['default'] is not None and arg['default'] in self.defaults:
+                        result[arg['name']] = self.defaults[arg['default']]
                     elif arg['default'] == argparse.SUPPRESS:
-                        result[arg['name']] = self.default[arg['short']]
+                        result[arg['name']] = self.defaults[arg['short']]
+                    elif arg['default'] is None:
+                        result[arg['name']] = None
+
+            if arg is not None and arg['name'] not in result:
+                raise KeyError(arg['name'])
 
         return result
 
@@ -115,10 +120,8 @@ class FileParser:
                     default = arg['default']
                 parser.add_argument("--" + arg['short'], type=arg['type'], help=arg['help'], required=False, default=default)
         namespace = parser.parse_args(args)
-        if namespace.filehelp:
-            print(get_help())
-            sys.exit(0)
         self.defaults = vars(namespace)
+        return namespace.filepath
 
 
 # To add a flag, the value must be optional and have a default value.
@@ -135,10 +138,10 @@ ARG_LIST = [
         {'flag': True, 'short': 'abs', 'name': "Abstractions", 'type': int,   'help': "Number of abstraction points to generate each pass", 'required': False, 'default': 'abs'},
         {'flag': True, 'short': 'bal', 'name': "FGSM Balance", 'type': float, 'help': "FGSM vs. Random balance factor",                     'required': False, 'default': 'bal'},
         None,
-        {'flag': True, 'short': 's-ver', 'name': "Verification Strategy",      'type': get_strategy('verification'),      'help': "Which verification strategy to use",      'required': False, 'default': 's-ver',      'options': get_strategy_choices('verification')},
-        {'flag': True, 'short': 's-dim', 'name': "Dimension-Ranking Strategy", 'type': get_strategy('dimension_ranking'), 'help': "Which dimension-ranking strategy to use", 'required': False, 'default': 's-dim', 'options': get_strategy_choices('dimension_ranking')},
-        {'flag': True, 'short': 's-abs', 'name': "Abstraction Strategy",       'type': get_strategy('abstraction'),       'help': "Which abstraction strategy to use",       'required': False, 'default': 's-abs',       'options': get_strategy_choices('abstraction')},
-        {'flag': True, 'short': "s-par", 'name': "Partitioning Strategy",      'type': get_strategy('partitioning'),      'help': "Which partitioning strategy to use",      'required': False, 'default': 's-par',      'options': get_strategy_choices('partitioning')},
+        {'flag': True, 'short': 's-ver', 'name': "Verification Strategy",      'type': get_strategy('verification'),      'help': "Which verification strategy to use",      'required': False, 'default': 's_ver',      'options': get_strategy_choices('verification')},
+        {'flag': True, 'short': 's-dim', 'name': "Dimension-Ranking Strategy", 'type': get_strategy('dimension_ranking'), 'help': "Which dimension-ranking strategy to use", 'required': False, 'default': 's_dim', 'options': get_strategy_choices('dimension_ranking')},
+        {'flag': True, 'short': 's-abs', 'name': "Abstraction Strategy",       'type': get_strategy('abstraction'),       'help': "Which abstraction strategy to use",       'required': False, 'default': 's_abs',       'options': get_strategy_choices('abstraction')},
+        {'flag': True, 'short': "s-par", 'name': "Partitioning Strategy",      'type': get_strategy('partitioning'),      'help': "Which partitioning strategy to use",      'required': False, 'default': 's_par',      'options': get_strategy_choices('partitioning')},
 ]
 
 
@@ -153,15 +156,19 @@ ABSOLUTE_DEFAULTS = {
         'thr': _getThreads(),
         'abs': 10,
         'bal': 0.9,
-        's-ver': "discrete_search",
-        's-dim': "gradient_based",
-        's-abs': "fgsm",
-        's-par': "largest_first",
+        's_ver': "discrete_search",
+        's_dim': "gradient_based",
+        's_abs': "fgsm",
+        's_par': "largest_first",
 }
 
 def parse_args(args, prog=None):
     fp = FileParser(ARG_LIST, ABSOLUTE_DEFAULTS)
-    fp.parse_overhead(args, prog=prog, prog_name="VERAPAK", description="")
+    file = fp.parse_overhead(args, prog=prog, prog_name="VERAPAK", description="")
+    global config
+    with file:
+        config = fp.parse_lines(file.readlines())
+    print(config)
 
 if __name__ == "__main__":
     parse_args(sys.argv[1:])
