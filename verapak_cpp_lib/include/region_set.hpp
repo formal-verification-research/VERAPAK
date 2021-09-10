@@ -25,6 +25,8 @@ bool operator<(grid::region const &, grid::point const &);
 bool operator<(grid::region const &, grid::region const &);
 bool operator<(grid::point const &, grid::point const &);
 
+bool operator<(numpy::ndarray const &, numpy::ndarray const &);
+
 namespace grid {
 struct region_less_compare {
   using is_transparent = void;
@@ -41,17 +43,37 @@ struct region_less_compare {
     return p1 < p2;
   }
 };
+
+struct ndarray_less_compare {
+    using is_transparent = void;
+    bool operator()(numpy::ndarray const& a, numpy::ndarray const& b) {
+        return a < b;
+    }
+};
 } // namespace grid
+
+
 
 using region_set = std::set<grid::region, grid::region_less_compare>;
 using region_key_point_map =
     std::map<grid::region, grid::point, grid::region_less_compare>;
 using region_stack = std::vector<grid::region>;
+using point_stack = std::vector<grid::point>;
+using point_set = std::set<numpy::ndarray, grid::ndarray_less_compare>;
 
 struct RegionSet {
   region_set region_set_internal;
   bool insert(numpy::ndarray const &, numpy::ndarray const &);
+  std::size_t size();
   python::tuple get_and_remove_region_containing_point(numpy::ndarray const &);
+};
+
+struct PointSet {
+    point_set point_set_internal;
+    bool insert(numpy::ndarray const&);
+    std::size_t size();
+    point_set::iterator begin();
+    point_set::iterator end();
 };
 
 #endif

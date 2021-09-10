@@ -9,5 +9,10 @@ BOOST_PYTHON_MODULE(verapak_utils) {
   python::class_<RegionSet>("RegionSet")
       .def("insert", &RegionSet::insert)
       .def("get_and_remove_region_containing_point",
-           &RegionSet::get_and_remove_region_containing_point);
+           &RegionSet::get_and_remove_region_containing_point)
+      .def("size", &RegionSet::size);
+  python::class_<PointSet>("PointSet")
+      .def("insert", &PointSet::insert)
+      .def("elements", python::range(&PointSet::begin, &PointSet::end))
+      .def("size", &PointSet::size);
 }
