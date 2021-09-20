@@ -15,3 +15,8 @@ class CenterPoint(ae.AbstractionEngine):
             retVal.append(point)
         return retVal
 
+
+# IMPORT INTERFACE
+def IMPL():
+    return CenterPoint()
+

@@ -1,4 +1,4 @@
-import abstraction.ae
+import abstraction.ae as ae
 
 class FallbackStrategy(ae.AbstractionEngine):
     
