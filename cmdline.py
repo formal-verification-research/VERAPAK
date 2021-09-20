@@ -105,7 +105,8 @@ class FileParser:
         line_num = 0
         for line in lines:
             line_num += 1
-            if line.lstrip().startswith("#") or len(line.strip()) == 0:
+            line = line.split("#", 1)[0]
+            if len(line.strip()) == 0:
                 continue
             if "::" not in line:
                 raise ValueError(f"Key/value separator \"::\" not found on line {line_num}")
@@ -173,7 +174,7 @@ def _getThreads():
     if sys.platform == 'win32':
         return (int)(os.environ['NUMBER_OF_PROCESSORS'])
     else:
-        return (int)(os.popen('grep -c cores /proc/cpuinfo').read())
+        return (int)(os.popen('grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu').read())
 
 ABSOLUTE_DEFAULTS = {
         'thr': _getThreads(),
