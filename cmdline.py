@@ -3,6 +3,7 @@ import sys
 import os
 import pkgutil
 from importlib import import_module
+import graphwrangler
 
 def directoryType(string):
     if os.path.isdir(string):
@@ -192,10 +193,15 @@ def parse_args(args, prog=None):
     global config
     with file:
         config = fp.parse_lines(file.readlines())
+        
+        config["Graph"] = graphwrangler.load_graph(config["Graph"])
+        if config["Input"] is None: # Guess Input node
+            inputs = graphwrangler.guess_input(config["Graph"].as_graph_def())
+        if config["Output"] is None: # Guess Output node
+            outputs = graphwrangler.guess_output(config["Graph"].as_graph_def())
+
     print(config)
 
 if __name__ == "__main__":
     parse_args(sys.argv[1:])
-
-
 
