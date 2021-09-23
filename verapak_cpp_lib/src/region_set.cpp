@@ -41,6 +41,12 @@ bool operator<(grid::point const &p1, grid::point const &p2) {
   return false;
 }
 
+bool operator<(numpy::ndarray const &p1, numpy::ndarray const &p2) {
+    auto v1 = numpyArrayToPoint(p1);
+    auto v2 = numpyArrayToPoint(p2);
+    return v1 < v2;
+}
+
 #include <iostream>
 
 bool RegionSet::insert(numpy::ndarray const &l, numpy::ndarray const &u) {
@@ -60,3 +66,20 @@ RegionSet::get_and_remove_region_containing_point(numpy::ndarray const &p) {
   region_set_internal.erase(iter);
   return python::make_tuple(true, python_region);
 }
+
+std::size_t RegionSet::size() { return region_set_internal.size(); }
+
+bool PointSet::insert(numpy::ndarray const &p)
+{
+    return point_set_internal.insert(p.copy()).second;
+}
+
+point_set::iterator PointSet::begin() {
+    return point_set_internal.begin();
+}
+
+point_set::iterator PointSet::end() {
+    return point_set_internal.end();
+}
+
+std::size_t PointSet::size() { return point_set_internal.size(); }
