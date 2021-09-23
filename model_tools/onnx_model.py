@@ -15,7 +15,7 @@ class ONNXModel(ModelBase):
                          output_shape, input_dtype, output_dtype)
 
     def evaluate(self, point):
-        return self.model_internal.run(point.reshape(self.input_shape).astype(np.float32))[0]
+        return self.model_internal.run(point.reshape(self.input_shape).astype(self.input_dtype))[0]
 
     def gradient_wrt_input(self, point):
         pass
