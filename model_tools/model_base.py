@@ -13,8 +13,6 @@ class ModelBase:
         raise NotImplementedError(
             "Model did not implement the evaluate function")
 
-    def gradient_wrt_input(self, point):
+    def gradient_of_loss_wrt_input(self, point, label):
         raise NotImplementedError(
             "Model did not implement the gradient_wrt_input function")
-
-
