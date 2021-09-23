@@ -28,8 +28,8 @@ class FGSMEngine(ae.AbstractionEngine):
             center = center[0] # Should only be one point                   # Get actual center *point*
             gradient_sign = np.sign(self.gradient(center))                  # Get normalized gradient
 
-            min_dimension, min_dimension_index = _min_dim(region) # TODO: In original, uses std::distance --- Why?
-            max_radius = (min_dimension[1] - min_dimension[0]) / 1.25 # TODO: Why divide by 1.25
+            min_dimension, min_dimension_index = _min_dim(region)
+            max_radius = (min_dimension[1] - min_dimension[0]) / 1.25 # Divide by 1.25 probably to keep points within the region, not on the borders.
 
             self._setup(region, num_abstractions)
 
@@ -49,52 +49,4 @@ class FGSMEngine(ae.AbstractionEngine):
     
     def _next_point(self, region, center, gradient_sign, epsilon):
         raise NotImplementedError("FGSMEngine did not implement _next_point(self, region, center, gradient_sign, epsilon)")
-
-
-class ModFGSM(FGSMEngine):
-
-    def __init__(self, gradient_function, granularity, dim_select_strategy, percent_fgsm, fallback_strategy=None):
-        super().__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
-
-        self.dim_select_strategy = dim_select_strategy
-        self.percent_fgsm = percent_fgsm
-
-    def _setup(self, region, num_abstractions):
-        dims = self.dim_select_strategy(region, region[0].size)
-        num_dims_fgsm = self.percent_fgsm * region[0].size
-
-        self.M = np.zeros(region[0].size)
-        self.M_not = np.ones(region[0].size)
-
-        for i in range(0, num_dims_fgsm):
-            self.M[dims[i]] = 1
-            self.M_not[dims[i]] = 0
-
-    def _next_point(self, region, center, gradient_sign, epsilon):
-        R = np.random.Generator.integers(0, 1, center.size, endpoint=True)
-        for i in range(0, center.size):
-            if (R[i] == 0):
-                R[i] = -1
-
-        fgsm_part = gradient_sign * self.M
-        mod_part = R * self.M_not
-        scaled_part = epsilon * (fgsm_part + mod_part)
-        generated_point = center + scaled_part
-
-        return generated_point
-
-
-class RplusFGSM(FGSMEngine):
-
-    def __init__(self, gradient_function, granularity, epsilon, fallback_strategy=None):
-        super().__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
-
-    def _setup(self, region, num_abstractions):
-        pass
-
-    def _next_point(self, region, center, gradient_sign, epsilon):
-        generated_point = np.empty(center.size())
-        for i in range(0, center.size()):
-            generated_point[i] = center + (epsilon * gradient_sign[i])
-        return generated_point
 
