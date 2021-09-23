@@ -24,7 +24,6 @@ class ONNXModel(ModelBase):
         return point.reshape(self.output_shape).astype(self.output_dtype)
 
     def evaluate(self, point):
-        print('evaluating model...')
         return self.model_internal.run(self._cast_point_input(point))[0]
 
     def gradient_of_loss_wrt_input(self, point, label):
