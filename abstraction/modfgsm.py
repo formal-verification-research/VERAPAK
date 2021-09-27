@@ -3,11 +3,10 @@ import numpy as np
 
 class ModFGSM(FGSMEngine):
 
-    def __init__(self, gradient_function, granularity, dim_select_strategy, percent_fgsm, fallback_strategy=None):
-        super().__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
-
-        self.dim_select_strategy = dim_select_strategy
-        self.percent_fgsm = percent_fgsm
+    def set_config(self, config):
+        super().set_config(config)
+        self.dim_select_strategy = config["Dimension-Ranking Strategy"]
+        self.percent_fgsm = config["FGSM Balance"]
 
     def _setup(self, region, num_abstractions):
         dims = self.dim_select_strategy(region, region[0].size)

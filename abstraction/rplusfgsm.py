@@ -3,9 +3,6 @@ import numpy as np
 
 class RplusFGSM(FGSMEngine):
 
-    def __init__(self, gradient_function, granularity, epsilon, fallback_strategy=None):
-        super().__init__(gradient_function, granularity, fallback_strategy=fallback_strategy)
-
     def _setup(self, region, num_abstractions):
         pass
 
