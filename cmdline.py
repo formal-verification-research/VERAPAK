@@ -11,6 +11,25 @@ def directoryType(string):
     else:
         raise ValueError(string + " is not a valid directory")
 
+def graphPathType(string):
+    return string # Assume ONNX (for now)
+
+class SafeList(list):
+    def get_else(index, else_index):
+        return retVal[index if len(retVal) > index else else_index]
+
+def perDimensionType(string):
+    string = string.strip()
+    if "," in string:
+        l = string.split(",")
+    elif " " in string:
+        l = string.split(" ")
+    retVal = SafeList()
+    for item in l:
+        if len(item.strip()) > 0:
+            retVal.append(float(item.strip()))
+    return retVal
+
 def get_strategy(module):
     if module in ["dimension_ranking", "partitioning"]:
         return lambda name : name
@@ -156,8 +175,8 @@ ARG_LIST = [
         {'flag': False, 'short': 'grf', 'name': "Graph",       'type': argparse.FileType('r'), 'help': "Path to the graph",                                                  'required': True},
         {'flag': False, 'short': 'in',  'name': "Input",       'type': str,                    'help': "Graph's input node (If not given, will try to guess)",               'required': False, 'default': None},
         {'flag': False, 'short': 'out', 'name': "Output",      'type': str,                    'help': "Graph's output node (If not given, will try to guess)",              'required': False, 'default': None},
-        {'flag': False, 'short': 'rad', 'name': "Radius",      'type': str,                    'help': "Single radius or per-dimension radii, comma separated",              'required': True},
-        {'flag': False, 'short': 'grn', 'name': "Granularity", 'type': str,                    'help': "Single granularity or per-dimension granularities, comma separated", 'required': True},
+        {'flag': False, 'short': 'rad', 'name': "Radius",      'type': perDimensionType,       'help': "Single radius or per-dimension radii, comma separated",              'required': True},
+        {'flag': False, 'short': 'grn', 'name': "Granularity", 'type': perDimensionType,       'help': "Single granularity or per-dimension granularities, comma separated", 'required': True},
         None,
         {'flag': True, 'short': 'thr', 'name': "Threads",      'type': int,   'help': "Number of threads to use",                           'required': False, 'default': 'thr'},
         {'flag': True, 'short': 'abs', 'name': "Abstractions", 'type': int,   'help': "Number of abstraction points to generate each pass", 'required': False, 'default': 'abs'},
@@ -190,18 +209,17 @@ ABSOLUTE_DEFAULTS = {
 def parse_args(args, prog=None):
     fp = FileParser(ARG_LIST, ABSOLUTE_DEFAULTS)
     file = fp.parse_overhead(args, prog=prog, prog_name="VERAPAK", description="")
-    global config
     with file:
         config = fp.parse_lines(file.readlines())
         
-        config["Graph"] = graphwrangler.load_graph(config["Graph"])
+        config["Graph"] = graphwrangler.load_graph(config["Graph"]) # Load ONNXModel into here instead
         if config["Input"] is None: # Guess Input node
             inputs = graphwrangler.guess_input(config["Graph"].as_graph_def())
         if config["Output"] is None: # Guess Output node
             outputs = graphwrangler.guess_output(config["Graph"].as_graph_def())
 
-    print(config)
+    return config
 
 if __name__ == "__main__":
-    parse_args(sys.argv[1:])
+    parse_args(sys.argv[1:], prog=sys.argv[0])
 
