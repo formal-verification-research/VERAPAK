@@ -11,3 +11,6 @@ class FallbackStrategy(ae.AbstractionEngine):
 
     def abstraction_impl(self, region, num_abstractions):
         self._what(region, num_abstractions)
+    
+    def set_config(self, config):
+        pass # Does not need any info from config

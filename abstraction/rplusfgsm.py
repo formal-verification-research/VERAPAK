@@ -3,6 +3,9 @@ import numpy as np
 
 class RplusFGSM(FGSMEngine):
 
+    def set_config(self, config):
+        pass # Does not need any info from config
+
     def _setup(self, region, num_abstractions):
         pass
 

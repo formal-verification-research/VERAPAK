@@ -4,6 +4,9 @@ import numpy as np
 
 class RandomPoint(ae.AbstractionEngine):
 
+    def set_config(self, config):
+        pass # Does not need any info from config
+
     def abstraction_impl(self, region, num_abstractions): # num_abstractions = number of split points
         retVal = []
         for i in range(0, num_abstractions):
