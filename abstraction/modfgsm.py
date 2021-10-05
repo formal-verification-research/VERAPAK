@@ -1,6 +1,11 @@
 from abstraction.fgsm_engine import FGSMEngine
 import numpy as np
 
+# For IMPL()
+from abstraction.fallback import FallbackStrategy
+from abstraction.random_point import RandomPoint
+from abstraction.fgsm_engine import _min_dim
+
 class ModFGSM(FGSMEngine):
 
     def set_config(self, config):
@@ -35,5 +40,9 @@ class ModFGSM(FGSMEngine):
 
 # IMPORT INTERFACE
 def IMPL():
-    return ModFGSM()
+    fallback = FallbackStrategy(
+            lambda region, num: False, # TODO: Add WHEN to fallback
+            RandomPoint.IMPL()
+            )
+    return ModFGSM(fallback_strategy=fallback)
 

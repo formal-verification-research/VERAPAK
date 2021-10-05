@@ -16,7 +16,7 @@ class FGSMEngine(ae.AbstractionEngine):
         self.fallback_strategy = fallback_strategy
 
     def set_config(config):
-        super().set_config(config)
+        self.config = config
         self.gradient = lambda point: config["Graph"].gradient_of_loss_wrt_input(point, LABEL) # TODO: Where to get label?
         self.granularity = config["Granularity"]
 

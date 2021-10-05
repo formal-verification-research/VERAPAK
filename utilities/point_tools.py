@@ -7,6 +7,9 @@ class AnyToSingle:
 
     def __getitem__(self, idx):
         return self.value
+    
+    def __len__(self):
+        return 1
 
 def granularity_to_array(granularity, point=None):
     if point is None and not isinstance(granularity, np.ndarray) and not isinstance(granularity, list):

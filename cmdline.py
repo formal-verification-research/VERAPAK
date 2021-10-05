@@ -3,7 +3,6 @@ import sys
 import os
 import pkgutil
 from importlib import import_module
-import model_tools.model_base as model_base
 import re
 from utilities.point_tools import AnyToSingle
 
@@ -180,14 +179,15 @@ class FileParser:
 
 # To add a flag, the value must be optional and have a default value.
 ARG_LIST = [
-        {'flag': True, 'short': 'dir', 'name': "Output Directory", 'type': directoryType,    'help': "The path where adversarial examples should be sent",                           'required': True, 'default': argparse.SUPPRESS},
-        {'flag': True, 'short': 'pnt', 'name': "Point",            'type': perDimensionType, 'help': "The point at which to test: per-dimension coordinates, comma/space separated", 'required': True, 'default': argparse.SUPPRESS},
+        {'flag': True, 'short': 'dir', 'name': "Output Directory", 'type': directoryType,                       'help': "The path where adversarial examples should be sent",                     'required': True, 'default': argparse.SUPPRESS},
+        {'flag': True, 'short': 'pnt', 'name': "Point",            'type': lambda s: np.fromstring(s, sep=','), 'help': "The point at which to test: per-dimension coordinates, comma separated", 'required': True, 'default': argparse.SUPPRESS},
         None,
-        {'flag': False, 'short': 'grf', 'name': "Graph",        'type': graphPathType,    'help': "Path to the graph",                                                        'required': True},
-        {'flag': False, 'short': 'in',  'name': "Input",        'type': str,              'help': "Graph's input node (If not given, will try to guess)",                     'required': False, 'default': None},
-        {'flag': False, 'short': 'out', 'name': "Output",       'type': str,              'help': "Graph's output node (If not given, will try to guess)",                    'required': False, 'default': None},
-        {'flag': False, 'short': 'rad', 'name': "Radius",       'type': perDimensionType, 'help': "Single radius or per-dimension radii, comma separated",                    'required': True},
-        {'flag': False, 'short': 'grn', 'name': "Granularity",  'type': perDimensionType, 'help': "Single granularity or per-dimension granularities, comma/space separated", 'required': True},
+        {'flag': False, 'short': 'grf', 'name': "Graph",        'type': graphPathType,    'help': "Path to the graph",                                                                                                  'required': True},
+        {'flag': False, 'short': 'in',  'name': "Input",        'type': str,              'help': "Graph's input node (If not given, will try to guess)",                                                               'required': False, 'default': None},
+        {'flag': False, 'short': 'out', 'name': "Output",       'type': str,              'help': "Graph's output node (If not given, will try to guess)",                                                              'required': False, 'default': None},
+        {'flag': False, 'short': 'rad', 'name': "Radius",       'type': perDimensionType, 'help': "Single radius or per-dimension radii, comma separated",                                                              'required': True},
+        {'flag': False, 'short': 'grn', 'name': "Granularity",  'type': perDimensionType, 'help': "Single granularity or per-dimension granularities, comma/space separated",                                           'required': True},
+        {'flag': False, 'short': 'lbl', 'name': "Label",        'type': int,              'help': "Intended class label number (use index of logit). If not provided, class of Point is assumed as the intended class", 'required': False, 'default': None},
         None,
         {'flag': True, 'short': 'thr', 'name': "Threads",      'type': int,   'help': "Number of threads to use",                           'required': False, 'default': 'thr'},
         {'flag': True, 'short': 'abs', 'name': "Abstractions", 'type': int,   'help': "Number of abstraction points to generate each pass", 'required': False, 'default': 'abs'},
@@ -222,10 +222,6 @@ def parse_args(args, prog=None):
     file = fp.parse_overhead(args, prog=prog, prog_name="VERAPAK", description="")
     with file:
         config = fp.parse_lines(file.readlines())
-        
-        graph_path, graph_type = config["Graph"]
-        config["Graph"] = model_base.load_graph_by_type(graph_path, graph_type)
-
     return config
 
 if __name__ == "__main__":
