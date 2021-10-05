@@ -3,7 +3,9 @@ import sys
 import os
 import pkgutil
 from importlib import import_module
-import graphwrangler
+import model_tools.model_base as model_base
+import re
+from utilities.point_tools import AnyToSingle
 
 def directoryType(string):
     if os.path.isdir(string):
@@ -12,11 +14,10 @@ def directoryType(string):
         raise ValueError(string + " is not a valid directory")
 
 def graphPathType(string):
-    return string # Assume ONNX (for now)
-
-class SafeList(list):
-    def get_else(index, else_index):
-        return retVal[index if len(retVal) > index else else_index]
+    if os.path.access(string, os.R_OK):
+        return string, "ONNX" # Assume ONNX (for now)
+    else:
+        raise ValueError(string + " is not a file or is otherwise inaccessible (e.g. insufficient permissions)")
 
 def perDimensionType(string):
     string = string.strip()
@@ -24,10 +25,14 @@ def perDimensionType(string):
         l = string.split(",")
     elif " " in string:
         l = string.split(" ")
-    retVal = SafeList()
+    retVal = list()
     for item in l:
         if len(item.strip()) > 0:
             retVal.append(float(item.strip()))
+    if len(retVal) == 1:
+        return AnyToSingle(retVal[0])
+    elif len(retVal) == 0:
+        raise ValueError("No value given")
     return retVal
 
 def get_strategy(module):
@@ -61,8 +66,13 @@ def get_strategy(module):
 def get_strategy_choices(module):
     submodules = []
     for submodule in pkgutil.iter_modules([module]):
-        if hasattr(import_module(f"{module}.{submodule.name}"), "IMPL"):
-            submodules.append(submodule.name)
+        submodule_obj = submodule.module_finder.find_module(submodule.name)
+        with open(submodule_obj.path, "r") as f:
+            for line in f:
+                if re.match(r"\A[ ]*def[ ]*IMPL[ ]*\([ ]*\)[ ]*:", line):
+                    submodules.append(submodule.name)
+                    break
+
     ret_str = "("
     ret_str += " | ".join(submodules)
     ret_str += " | ...)"
@@ -153,7 +163,7 @@ class FileParser:
         return result
 
     def parse_overhead(self, args, prog, prog_name=None, description=None):
-        parser = argparse.ArgumentParser(prog=prog, description=description, usage="%(prog)s [-h] [-f?] [options] filepath")
+        parser = argparse.ArgumentParser(prog=prog, description=description, usage="%(prog)s [-h | -f? | options] filepath")
         parser.add_argument("-f?", string=self.get_help(description=f"{prog_name} Config File Help"), action=PrintAction, dest="filehelp", help="show config file help message and exit")
         parser.add_argument("filepath", type=argparse.FileType('r'), help="Path to the config file")
         for arg in self.arg_list:
@@ -162,7 +172,7 @@ class FileParser:
                     default = self.defaults[arg['default']]
                 else:
                     default = arg['default']
-                parser.add_argument("--" + arg['short'], type=arg['type'], help=arg['help'], required=False, default=default)
+                parser.add_argument("--" + arg['short'], help=arg['help'], required=False, default=default)
         namespace = parser.parse_args(args)
         self.defaults = vars(namespace)
         return namespace.filepath
@@ -170,13 +180,14 @@ class FileParser:
 
 # To add a flag, the value must be optional and have a default value.
 ARG_LIST = [
-        {'flag': True, 'short': 'dir', 'name': "Output Directory", 'type': directoryType, 'help': "The path where adversarial examples should be sent", 'required': True, 'default': argparse.SUPPRESS},
+        {'flag': True, 'short': 'dir', 'name': "Output Directory", 'type': directoryType,    'help': "The path where adversarial examples should be sent",                           'required': True, 'default': argparse.SUPPRESS},
+        {'flag': True, 'short': 'pnt', 'name': "Point",            'type': perDimensionType, 'help': "The point at which to test: per-dimension coordinates, comma/space separated", 'required': True, 'default': argparse.SUPPRESS},
         None,
-        {'flag': False, 'short': 'grf', 'name': "Graph",       'type': argparse.FileType('r'), 'help': "Path to the graph",                                                  'required': True},
-        {'flag': False, 'short': 'in',  'name': "Input",       'type': str,                    'help': "Graph's input node (If not given, will try to guess)",               'required': False, 'default': None},
-        {'flag': False, 'short': 'out', 'name': "Output",      'type': str,                    'help': "Graph's output node (If not given, will try to guess)",              'required': False, 'default': None},
-        {'flag': False, 'short': 'rad', 'name': "Radius",      'type': perDimensionType,       'help': "Single radius or per-dimension radii, comma separated",              'required': True},
-        {'flag': False, 'short': 'grn', 'name': "Granularity", 'type': perDimensionType,       'help': "Single granularity or per-dimension granularities, comma separated", 'required': True},
+        {'flag': False, 'short': 'grf', 'name': "Graph",        'type': graphPathType,    'help': "Path to the graph",                                                        'required': True},
+        {'flag': False, 'short': 'in',  'name': "Input",        'type': str,              'help': "Graph's input node (If not given, will try to guess)",                     'required': False, 'default': None},
+        {'flag': False, 'short': 'out', 'name': "Output",       'type': str,              'help': "Graph's output node (If not given, will try to guess)",                    'required': False, 'default': None},
+        {'flag': False, 'short': 'rad', 'name': "Radius",       'type': perDimensionType, 'help': "Single radius or per-dimension radii, comma separated",                    'required': True},
+        {'flag': False, 'short': 'grn', 'name': "Granularity",  'type': perDimensionType, 'help': "Single granularity or per-dimension granularities, comma/space separated", 'required': True},
         None,
         {'flag': True, 'short': 'thr', 'name': "Threads",      'type': int,   'help': "Number of threads to use",                           'required': False, 'default': 'thr'},
         {'flag': True, 'short': 'abs', 'name': "Abstractions", 'type': int,   'help': "Number of abstraction points to generate each pass", 'required': False, 'default': 'abs'},
@@ -212,11 +223,8 @@ def parse_args(args, prog=None):
     with file:
         config = fp.parse_lines(file.readlines())
         
-        config["Graph"] = graphwrangler.load_graph(config["Graph"]) # Load ONNXModel into here instead
-        if config["Input"] is None: # Guess Input node
-            inputs = graphwrangler.guess_input(config["Graph"].as_graph_def())
-        if config["Output"] is None: # Guess Output node
-            outputs = graphwrangler.guess_output(config["Graph"].as_graph_def())
+        graph_path, graph_type = config["Graph"]
+        config["Graph"] = model_base.load_graph_by_type(graph_path, graph_type)
 
     return config
 

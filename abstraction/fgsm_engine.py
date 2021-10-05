@@ -40,12 +40,12 @@ class FGSMEngine(ae.AbstractionEngine):
             self._setup(region, num_abstractions)
 
             e1_lowerbound = 1
-            e1_upperbound = int(max_radius / self.granularity.get_else(min_dimension_index, 0))
+            e1_upperbound = int(max_radius / self.granularity[min_dimension_index])
 
             retVal = []
 
             for i in range(0, num_abstractions):
-                current_epsilon = self.granularity.get_else(min_dimension_index, 0) * np.random.Generator.integers(e1_lowerbound, e1_upperbound)
+                current_epsilon = self.granularity[min_dimension_index] * np.random.Generator.integers(e1_lowerbound, e1_upperbound)
                 retVal.append(self._next_point(region, center, gradient_sign, current_epsilon))
             
             return retVal
