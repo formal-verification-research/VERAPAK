@@ -5,10 +5,9 @@ from verapak.dimension_ranking import gradient_based
 from verapak.dimension_ranking.largest_first import LargestFirstDimSelection
 from verapak.abstraction.center_point import CenterPoint
 from verapak.abstraction.fallback import FallbackStrategy
-from verapak.abstraction.fgsm_engine import FGSMEngine
+from verapak.abstraction.fgsm import FGSM
 from verapak.abstraction.modfgsm import ModFGSM
 from verapak.abstraction.random_point import RandomPoint
-from verapak.abstraction.rplusfgsm import RplusFGSM
 from verapak.partitioning.tools import hierarchicalDimensionRefinement
 from verapak.partitioning.largest_first import LargestFirstPartitioningStrategy
 import verapak_utils
@@ -159,6 +158,12 @@ class LargestFirstPartitioningTest(unittest.TestCase):
         self.assertFalse(acc[1])
         self.assertFalse(acc[3])
 
+class ModFGSMTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_modfgsm(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()
