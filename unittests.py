@@ -158,6 +158,12 @@ class LargestFirstPartitioningTest(unittest.TestCase):
         self.assertFalse(acc[1])
         self.assertFalse(acc[3])
 
+class ModFGSMTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_modfgsm(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()
