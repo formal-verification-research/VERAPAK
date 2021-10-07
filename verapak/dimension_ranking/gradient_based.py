@@ -1,9 +1,9 @@
-from .dim_select_base import *
-from abstraction import center_point as cp_abstract
+from .dre import *
+from ..abstraction import center_point as cp_abstract
 import numpy as np
 
 
-class GradientBasedDimSelection(DimSelectionBase):
+class GradientBasedDimSelection(DimensionRankingEngine):
     def __init__(self, grad_func):
         self.gradient_func = grad_func
         self.center_point_abstraction = cp_abstract.CenterPoint()

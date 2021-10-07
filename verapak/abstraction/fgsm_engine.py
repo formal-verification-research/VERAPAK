@@ -1,5 +1,5 @@
-import abstraction.ae as ae
-from abstraction.center_point import CenterPoint
+from .ae import AbstractionEngine
+from .center_point import CenterPoint
 import numpy as np
 
 def _min_dim(region):
@@ -10,7 +10,7 @@ def _min_dim(region):
     return [region[0][i], region[1][i]], minimum_index
 
 
-class FGSMEngine(ae.AbstractionEngine):
+class FGSMEngine(AbstractionEngine):
 
     def __init__(self, fallback_strategy=None):
         self.fallback_strategy = fallback_strategy
@@ -55,4 +55,3 @@ class FGSMEngine(ae.AbstractionEngine):
     
     def _next_point(self, region, center, gradient_sign, epsilon):
         raise NotImplementedError("FGSMEngine did not implement _next_point(self, region, center, gradient_sign, epsilon)")
-

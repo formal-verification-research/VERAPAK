@@ -1,8 +1,8 @@
-import abstraction.ae as ae
+from .ae import AbstractionEngine
 import random
 import numpy as np
 
-class RandomPoint(ae.AbstractionEngine):
+class RandomPoint(AbstractionEngine):
 
     def set_config(self, config):
         pass # Does not need any info from config

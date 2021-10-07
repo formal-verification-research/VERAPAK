@@ -1,7 +1,7 @@
-import abstraction.ae as ae
+from .ae import AbstractionEngine
 import numpy as np
 
-class CenterPoint(ae.AbstractionEngine):
+class CenterPoint(AbstractionEngine):
 
     def set_config(self, config):
         pass # Does not need any info from config

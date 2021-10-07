@@ -1,10 +1,9 @@
-from abstraction.fgsm_engine import FGSMEngine
+from .fgsm_engine import FGSMEngine, _min_dim
 import numpy as np
 
 # For IMPL()
-from abstraction.fallback import FallbackStrategy
-from abstraction.random_point import RandomPoint
-from abstraction.fgsm_engine import _min_dim
+from .fallback import FallbackStrategy
+from .random_point import RandomPoint
 
 class ModFGSM(FGSMEngine):
 

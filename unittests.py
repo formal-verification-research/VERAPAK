@@ -1,7 +1,17 @@
 import unittest
 import numpy as np
-from utilities import point_tools
-from dimension_ranking import gradient_dim_select
+from verapak.utilities import point_tools
+from verapak.dimension_ranking import gradient_based
+from verapak.dimension_ranking.largest_first import LargestFirstDimSelection
+from verapak.abstraction.center_point import CenterPoint
+from verapak.abstraction.fallback import FallbackStrategy
+from verapak.abstraction.fgsm_engine import FGSMEngine
+from verapak.abstraction.modfgsm import ModFGSM
+from verapak.abstraction.random_point import RandomPoint
+from verapak.abstraction.rplusfgsm import RplusFGSM
+from verapak.partitioning.tools import hierarchicalDimensionRefinement
+from verapak.partitioning.largest_first import LargestFirstPartitioningStrategy
+import verapak_utils
 
 
 class PointToolsTests(unittest.TestCase):
@@ -58,14 +68,96 @@ class PointToolsTests(unittest.TestCase):
 
 class GradientDimSelectionTests(unittest.TestCase):
     def setUp(self):
-        self.grad_strategy = gradient_dim_select.GradientBasedDimSelection(
+        self.grad_strategy = gradient_based.GradientBasedDimSelection(
             lambda x: x)
 
     def test_dim_selection_strategy(self):
-        region_lb = np.array([1,2,3,4,5,6])
-        a = self.grad_strategy.rank_indices([region_lb, region_lb + 4])
-        print(a)
+        region_lb = np.array([1, 2, 3, 4, 5, 6])
+        a = self.grad_strategy.rank_indices_impl([region_lb, region_lb + 4])
         pass
+
+
+class LargestFirstDimSelectionTests(unittest.TestCase):
+    def setUp(self):
+        self.dim_selection_strat = LargestFirstDimSelection()
+        pass
+
+    def test_lf_dim_selection(self):
+        region = [np.array([1, 1, 1, 1]), np.array([2, 5, 3, 6])]
+        res = self.dim_selection_strat.rank_indices_impl(region)
+        expected = [3, 1, 2, 0]
+        self.assertCountEqual(res, expected)
+        self.assertListEqual(res, expected)
+        region1 = [region[0].reshape(2, 2), region[1].reshape(2, 2)]
+        res = self.dim_selection_strat.rank_indices_impl(region1)
+        self.assertCountEqual(res, expected)
+        self.assertListEqual(res, expected)
+        pass
+
+
+class PointSetTests(unittest.TestCase):
+    def test_point_set(self):
+        point_set = verapak_utils.PointSet()
+        self.assertEqual(point_set.size(), 0)
+
+    def test_region_set(self):
+        region_set = verapak_utils.RegionSet()
+        self.assertEqual(region_set.size(), 0)
+
+
+class PartitioningToolsTest(unittest.TestCase):
+    def setUp(self):
+        self.region1 = [np.array([1.0, 1.0, 1.0, 1.0]),
+                        np.array([3.0, 3.0, 3.0, 3.0])]
+        self.dim_select_strategy = lambda x: [i for i in range(x[0].size)]
+
+    def test_enumeration(self):
+        res = hierarchicalDimensionRefinement(
+            self.region1, self.dim_select_strategy, 4, 2)
+        self.assertEqual(len(res), 2**4)
+        res = hierarchicalDimensionRefinement(
+            self.region1, self.dim_select_strategy, 4, 3)
+        self.assertEqual(len(res), 3**4)
+        res = hierarchicalDimensionRefinement([self.region1[0].reshape(
+            2, 2), self.region1[1].reshape(2, 2)], self.dim_select_strategy, 4, 4)
+        self.assertEqual(len(res), 4**4)
+
+
+class LargestFirstPartitioningTest(unittest.TestCase):
+    def setUp(self):
+        self.strat = LargestFirstPartitioningStrategy(2, 2)
+
+    def test_lf_partitioning(self):
+        region1 = [np.array([1.0, 1.0, 1.0, 1.0]),
+                   np.array([3.0, 3.0, 5.0, 5.0])]
+        res = self.strat.partition_impl(region1)
+        acc = np.full(region1[0].shape, True)
+        for i in res:
+            acc = acc & (i[0] == region1[0]) & (i[1] == region1[1])
+        self.assertTrue(acc[0] and acc[1])
+        self.assertFalse(acc[2])
+        self.assertFalse(acc[3])
+        lbs = [list(x[0]) for x in res]
+        ubs = [list(x[1]) for x in res]
+        self.assertTrue([1.0, 1.0, 3.0, 3.0] in lbs)
+        self.assertTrue([1.0, 1.0, 3.0, 1.0] in lbs)
+        self.assertTrue([1.0, 1.0, 1.0, 3.0] in lbs)
+        self.assertTrue([1.0, 1.0, 1.0, 1.0] in lbs)
+
+        self.assertTrue([3.0, 3.0, 5.0, 5.0] in ubs)
+        self.assertTrue([3.0, 3.0, 5.0, 3.0] in ubs)
+        self.assertTrue([3.0, 3.0, 3.0, 5.0] in ubs)
+        self.assertTrue([3.0, 3.0, 3.0, 3.0] in ubs)
+
+        region2 = [np.array([1.0, 1.0, 1.0, 1.0]),
+                   np.array([2.0, 5.0, 3.0, 4.0])]
+        res = self.strat.partition_impl(region2)
+        acc = np.full(region2[0].shape, True)
+        for i in res:
+            acc = acc & (i[0] == region2[0]) & (i[1] == region2[1])
+        self.assertTrue(acc[0] and acc[2])
+        self.assertFalse(acc[1])
+        self.assertFalse(acc[3])
 
 
 if __name__ == "__main__":
