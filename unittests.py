@@ -8,6 +8,7 @@ from verapak.abstraction.fgsm_engine import FGSMEngine
 from verapak.abstraction.modfgsm import ModFGSM
 from verapak.abstraction.random_point import RandomPoint
 from verapak.abstraction.rplusfgsm import RplusFGSM
+from verapak.partitioning.tools import hierarchicalDimensionRefinement
 import verapak_utils
 
 
@@ -71,7 +72,6 @@ class GradientDimSelectionTests(unittest.TestCase):
     def test_dim_selection_strategy(self):
         region_lb = np.array([1, 2, 3, 4, 5, 6])
         a = self.grad_strategy.rank_indices_impl([region_lb, region_lb + 4])
-        print(a)
         pass
 
 
@@ -83,6 +83,24 @@ class PointSetTests(unittest.TestCase):
     def test_region_set(self):
         region_set = verapak_utils.RegionSet()
         self.assertEqual(region_set.size(), 0)
+
+
+class PartitioningToolsTest(unittest.TestCase):
+    def setUp(self):
+        self.region1 = [np.array([1.0, 1.0, 1.0, 1.0]),
+                        np.array([3.0, 3.0, 3.0, 3.0])]
+        self.dim_select_strategy = lambda x: [i for i in range(x[0].size)]
+
+    def test_enumeration(self):
+        res = hierarchicalDimensionRefinement(
+            self.region1, self.dim_select_strategy, 4, 2)
+        self.assertEqual(len(res), 2**4)
+        res = hierarchicalDimensionRefinement(
+            self.region1, self.dim_select_strategy, 4, 3)
+        self.assertEqual(len(res), 3**4)
+        res = hierarchicalDimensionRefinement([self.region1[0].reshape(
+            2, 2), self.region1[1].reshape(2, 2)], self.dim_select_strategy, 4, 4)
+        self.assertEqual(len(res), 4**4)
 
 
 if __name__ == "__main__":
