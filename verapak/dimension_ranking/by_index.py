@@ -1,6 +1,6 @@
-import dimension_ranking.dre as dre
+from .dre import DimensionRankingEngine
 
-class ByIndex(dre.DimensionRankingEngine):
+class ByIndex(DimensionRankingEngine):
 
     def set_config(self, config):
         pass # Does not need any info from config

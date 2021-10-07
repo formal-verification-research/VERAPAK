@@ -1,6 +1,6 @@
-import abstraction.ae as ae
+from .ae import AbstractionEngine
 
-class FallbackStrategy(ae.AbstractionEngine):
+class FallbackStrategy(AbstractionEngine):
     
     def __init__(self, when, what):
         self._should_fallback = when

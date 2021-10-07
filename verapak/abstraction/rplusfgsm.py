@@ -1,4 +1,4 @@
-from abstraction.fgsm_engine import FGSMEngine
+from .fgsm_engine import FGSMEngine
 import numpy as np
 
 class RplusFGSM(FGSMEngine):

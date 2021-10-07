@@ -4,7 +4,7 @@ import os
 import pkgutil
 from importlib import import_module
 import re
-from utilities.point_tools import AnyToSingle
+from .utilities.point_tools import AnyToSingle
 
 def directoryType(string):
     if os.path.isdir(string):

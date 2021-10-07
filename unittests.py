@@ -1,7 +1,14 @@
 import unittest
 import numpy as np
-from utilities import point_tools
-from dimension_ranking import gradient_dim_select
+from verapak.utilities import point_tools
+from verapak.dimension_ranking import gradient_based
+from verapak.abstraction.center_point import CenterPoint
+from verapak.abstraction.fallback import FallbackStrategy
+from verapak.abstraction.fgsm_engine import FGSMEngine
+from verapak.abstraction.modfgsm import ModFGSM
+from verapak.abstraction.random_point import RandomPoint
+from verapak.abstraction.rplusfgsm import RplusFGSM
+import verapak_utils
 
 
 class PointToolsTests(unittest.TestCase):
@@ -58,14 +65,24 @@ class PointToolsTests(unittest.TestCase):
 
 class GradientDimSelectionTests(unittest.TestCase):
     def setUp(self):
-        self.grad_strategy = gradient_dim_select.GradientBasedDimSelection(
+        self.grad_strategy = gradient_based.GradientBasedDimSelection(
             lambda x: x)
 
     def test_dim_selection_strategy(self):
-        region_lb = np.array([1,2,3,4,5,6])
-        a = self.grad_strategy.rank_indices([region_lb, region_lb + 4])
+        region_lb = np.array([1, 2, 3, 4, 5, 6])
+        a = self.grad_strategy.rank_indices_impl([region_lb, region_lb + 4])
         print(a)
         pass
+
+
+class PointSetTests(unittest.TestCase):
+    def test_point_set(self):
+        point_set = verapak_utils.PointSet()
+        self.assertEqual(point_set.size(), 0)
+
+    def test_region_set(self):
+        region_set = verapak_utils.RegionSet()
+        self.assertEqual(region_set.size(), 0)
 
 
 if __name__ == "__main__":
