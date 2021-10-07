@@ -1,9 +1,10 @@
-from .fgsm_engine import FGSMEngine, _min_dim
+from .fgsm_engine import FGSMEngine
 import numpy as np
 
 # For IMPL()
 from .fallback import FallbackStrategy
 from .random_point import RandomPoint
+
 
 class ModFGSM(FGSMEngine):
 
@@ -24,10 +25,7 @@ class ModFGSM(FGSMEngine):
             self.M_not[dims[i]] = 0
 
     def _next_point(self, region, center, gradient_sign, epsilon):
-        R = np.random.Generator.integers(0, 1, center.size, endpoint=True)
-        for i in range(0, center.size):
-            if (R[i] == 0):
-                R[i] = -1
+        R = np.random.randint(0, 2, size=center.shape) * 2 - 1
 
         fgsm_part = gradient_sign * self.M
         mod_part = R * self.M_not
@@ -40,8 +38,7 @@ class ModFGSM(FGSMEngine):
 # IMPORT INTERFACE
 def IMPL():
     fallback = FallbackStrategy(
-            lambda region, num: False, # TODO: Add WHEN to fallback
-            RandomPoint.IMPL()
-            )
+        lambda region, num: False,  # TODO: Add WHEN to fallback
+        RandomPoint.IMPL()
+    )
     return ModFGSM(fallback_strategy=fallback)
-
