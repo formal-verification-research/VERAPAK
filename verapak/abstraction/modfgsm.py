@@ -3,6 +3,7 @@ from .center_point import CenterPoint
 import numpy as np
 from ..dimension_ranking.naive import NaiveDimRanking
 import math
+from ..snap import point_to_domain
 
 
 def _min_dim(region):
@@ -19,12 +20,9 @@ class ModFGSM(AbstractionEngine):
         self.percent_fgsm = percent_fgsm
         self.gradient = grad_func
         self.granularity = granularity
+        self.dim_selection_strategy = dim_selection_strategy
 
     def abstraction_impl(self, region, num_abstractions):
-        if not hasattr(self, "config") or self.config is None:
-            raise RuntimeError(
-                "FGSMEngine requires a call to set_config(config) before calling abstraction_impl(region, num_abstractions)")
-
         # Should fallback?
         if self.fallback_strategy is not None and self.fallback_predicate(region):
             # Then fall back
@@ -33,7 +31,8 @@ class ModFGSM(AbstractionEngine):
         center = CenterPoint().abstraction_impl(
             region, 1)[0]  # Get center point
         # Get sign of gradient
-        gradient_sign = np.sign(self.gradient(center))
+        grad = self.gradient(center)
+        gradient_sign = np.sign(grad)
 
         min_dimension_range, min_dimension_index = _min_dim(region)
         # Divide by 1.25 probably to keep points within the region, not on the borders.
@@ -43,16 +42,19 @@ class ModFGSM(AbstractionEngine):
         e1_upperbound = int(
             max_radius / self.granularity[min_dimension_index])
 
-        retVal = []
         sorted_dims = self.dim_selection_strategy.rank_indices_impl(region)
-        unraveled_sorted_dims = [list(np.unravel_index(
-            x, region[0].shape)) for x in sorted_dims]
+        unraveled_sorted_dims = [np.unravel_index(
+            x, region[0].shape) for x in sorted_dims]
+        if len(unraveled_sorted_dims[0]) == 1:
+            unraveled_sorted_dims = [x[0] for x in unraveled_sorted_dims]
         M = np.full(region[0].shape, 0.0)
         num_dims_fgsm = math.floor(self.percent_fgsm * region[0].size)
-        M[unraveled_sorted_dims[:num_dims_fgsm]] = 1.0
+        unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
+        M[unraveled_sorted_dims] = 1.0
         fgsm_part = gradient_sign * M
         Mnot = M * -1.0 + 1.0
 
+        retVal = []
         for i in range(0, num_abstractions):
             current_epsilon = self.granularity[min_dimension_index] * \
                 np.random.randint(e1_lowerbound, e1_upperbound)

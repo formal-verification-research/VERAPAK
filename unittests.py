@@ -7,6 +7,7 @@ from verapak.abstraction.center_point import CenterPoint
 from verapak.abstraction.fallback import FallbackStrategy
 from verapak.abstraction.fgsm import FGSM
 from verapak.abstraction.modfgsm import ModFGSM
+from verapak.abstraction.rfgsm import RFGSM
 from verapak.abstraction.random_point import RandomPoint
 from verapak.partitioning.tools import hierarchicalDimensionRefinement
 from verapak.partitioning.largest_first import LargestFirstPartitioningStrategy
@@ -158,12 +159,25 @@ class LargestFirstPartitioningTest(unittest.TestCase):
         self.assertFalse(acc[1])
         self.assertFalse(acc[3])
 
+
 class ModFGSMTest(unittest.TestCase):
     def setUp(self):
-        pass
+        self.granularity = np.array([1, 1, 1, 1])
+        self.fgsm = ModFGSM(
+            grad_func=lambda x: x, granularity=np.array([1, 1, 1, 1], dtype=np.float64))
+        self.rfgsm = RFGSM(grad_func=lambda x: 0.1 * x,
+                           granularity=np.array([1.0, 1.0, 1.0, 1.0]), percent_fgsm=0.5)
 
     def test_modfgsm(self):
-        pass
+        region1 = [np.array([0, 0, 0, 0], dtype=np.float64),
+                   np.array([4, 4, 4, 4], dtype=np.float64)]
+        res = self.fgsm.abstraction_impl(region1, 4)
+        self.assertEqual(len(res), 4)
+        res = self.fgsm.abstraction_impl(region1, 8)
+        self.assertEqual(len(res), 8)
+        res = self.rfgsm.abstraction_impl(region1, 4)
+        self.assertEqual(len(res), 4)
+
 
 if __name__ == "__main__":
     unittest.main()

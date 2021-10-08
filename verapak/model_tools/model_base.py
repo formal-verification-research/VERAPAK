@@ -14,10 +14,11 @@ class ModelBase:
         raise NotImplementedError(
             "Model did not implement the gradient_wrt_input function")
 
+
 def load_graph_by_type(graph_path, graph_type):
     if graph_type == "ONNX":
-        import onnx_model
-        config["Graph"] = onnx_model.ONNXModel(graph_path)
+        from .onnx_model import ONNXModel
+        return ONNXModel(graph_path)
     else:
-        raise NotImplementedError(f"Graph type {graph_type} is not implemented")
-
+        raise NotImplementedError(
+            f"Graph type {graph_type} is not implemented")

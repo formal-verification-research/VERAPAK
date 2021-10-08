@@ -1,15 +1,17 @@
 import numpy as np
 import math
 
+
 class AnyToSingle:
     def __init__(self, value):
         self.value = value
 
     def __getitem__(self, idx):
         return self.value
-    
+
     def __len__(self):
         return 1
+
 
 def granularity_to_array(granularity, point=None):
     if point is None and not isinstance(granularity, np.ndarray) and not isinstance(granularity, list):
@@ -22,7 +24,7 @@ def granularity_to_array(granularity, point=None):
         if point is None:
             return converted
         return converted.reshape(point.shape)
-    if isinstance(granularity, int):
+    if isinstance(granularity, int) or isinstance(granularity, float):
         return np.full_like(point, granularity)
     if isinstance(granularity, AnyToSingle):
         return np.full_like(point, granularity.value)
@@ -73,11 +75,13 @@ def get_amount_valid_points(region, granularity, valid_point):
         retVal *= numPointsInDim
     return retVal
 
+
 class iter_discrete_points:
     def __init__(self, region, granularity, valid_point):
         self._region = region
         self._granularity = granularity_to_array(granularity, valid_point)
-        self._skew = np.floor(self._region[0] / self._granularity) * self._granularity
+        self._skew = np.floor(
+            self._region[0] / self._granularity) * self._granularity
         self._skew += self._valid_point % self._granularity
         for idx, value in np.ndenumerate(self._skew):
             if self._region[0][idx] > value:
@@ -85,11 +89,10 @@ class iter_discrete_points:
 
     def __iter__(self):
         self._iterator = np.ndindex(
-                np.ceil(self._region[1] / self._granularity)
-                - np.floor(self._region[0] / self._granularity)
-                ).__iter__()
+            np.ceil(self._region[1] / self._granularity)
+            - np.floor(self._region[0] / self._granularity)
+        ).__iter__()
         return self
 
     def __next__(self):
         return (self._iterator.__next__() * self._granularity) + self._skew
-

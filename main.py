@@ -26,11 +26,6 @@ def setup(config):
     else:
         config["Radius"] = config["Radius"].reshape(config["Point"].shape).astype(config["Graph"].input_dtype)
 
-    config["Verification Strategy"].set_config(config)
-    config["Dimension-Ranking Strategy"].set_config(config)
-    config["Abstraction Strategy"].set_config(config)
-    config["Partitioning Strategy"].set_config(config)
-
 
 def main(config):
     pass
