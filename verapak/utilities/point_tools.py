@@ -76,23 +76,28 @@ def get_amount_valid_points(region, granularity, valid_point):
     return retVal
 
 
-class iter_discrete_points:
-    def __init__(self, region, granularity, valid_point):
-        self._region = region
-        self._granularity = granularity_to_array(granularity, valid_point)
-        self._skew = np.floor(
-            self._region[0] / self._granularity) * self._granularity
-        self._skew += self._valid_point % self._granularity
-        for idx, value in np.ndenumerate(self._skew):
-            if self._region[0][idx] > value:
-                self._skew[idx] += self._granularity[idx]
+def _enumerate_impl(curPoint, curIndex, region, granularity):
+    if curIndex >= region[0].size:
+        yield True
+        return
+    cp_point = curPoint.copy()
+    reg_idx = np.unravel_index(curIndex, region[0].shape)
+    while cp_point[reg_idx] < region[1][reg_idx]:
+        last_val = None
+        for i in _enumerate_impl(cp_point, curIndex + 1, region, granularity):
+            if not (i is True):
+                yield i
+            else:
+                last_val = i
+        if last_val is True:
+            yield cp_point
+        if granularity[reg_idx] <= 0.0:
+            break
+        cp_point[reg_idx] += granularity[reg_idx]
 
-    def __iter__(self):
-        self._iterator = np.ndindex(
-            np.ceil(self._region[1] / self._granularity)
-            - np.floor(self._region[0] / self._granularity)
-        ).__iter__()
-        return self
 
-    def __next__(self):
-        return (self._iterator.__next__() * self._granularity) + self._skew
+def enumerate_valid_points(region, granularity, valid_point):
+    vp = get_valid_point_in_region(region, granularity, valid_point)
+    if vp is None:
+        return
+    yield from _enumerate_impl(vp, 0, region, granularity)

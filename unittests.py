@@ -179,5 +179,18 @@ class ModFGSMTest(unittest.TestCase):
         self.assertEqual(len(res), 4)
 
 
+class VerificationToolsTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_discrete_point_enumerator(self):
+        r1 = [np.array([0, 0, 0, 0], dtype=np.float32),
+              np.array([2, 2, 2, 2], dtype=np.float32)]
+        g = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
+        vp = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
+        self.assertEqual(len(all_points), 2**4)
+
+
 if __name__ == "__main__":
     unittest.main()

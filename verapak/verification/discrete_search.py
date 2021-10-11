@@ -27,17 +27,6 @@ class DiscreteSearch(VerificationEngine):
 
 # IMPORT INTERFACE
 def IMPL():
-    class LessPointsThanThreshold:
-        def __init__(self, default_threshold):
-            self.threshold = default_threshold
-        
-        def set_threshold(self, threshold):
-            self.threshold = threshold
-
-        def __call__(self, region, granularity, initial_point):
-            return get_amount_valid_points(region,
-                    granularity, initial_point) < self.threshold
-
     should_attempt_checker = LessPointsThanThreshold(1000)
     discrete_point_generator = iter_discrete_points
 
