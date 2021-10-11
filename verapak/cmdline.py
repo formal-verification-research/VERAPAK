@@ -131,6 +131,25 @@ class FileParser:
     
     def parse_lines(self, lines):
         result = dict()
+        
+        # Set defaults first
+        for arg in self.arg_list:
+            if arg is not None:
+                if 'default' in arg:
+                    if arg['required']:
+                        if arg['default'] == argparse.SUPPRESS and arg['short'] in self.defaults:
+                            result[arg['name']] = self.defaults[arg['short']]
+                        else:
+                            pass # No default value -- required!
+                    else:
+                        if arg['default'] is None:
+                            result[arg['name']] = None
+                        elif arg['default'] in self.defaults:
+                            result[arg['name']] = self.defaults[arg['default']]
+                        else:
+                            raise NotImplementedError("Config key \"" + arg['name'] + "\" was marked as optional, but has no default! (Use 'default': None if this is intentional)")
+
+        # Parse config file
         line_num = 0
         for line in lines:
             line_num += 1
@@ -146,16 +165,8 @@ class FileParser:
             else:
                 result[key] = self.arg_dict[key]['type'](value)
 
+        # Check for missing arguments
         for arg in self.arg_list:
-            if arg is not None and arg['name'] not in result:
-                if 'default' in arg:
-                    if not arg['required'] and arg['default'] is not None and arg['default'] in self.defaults:
-                        result[arg['name']] = self.defaults[arg['default']]
-                    elif arg['default'] == argparse.SUPPRESS:
-                        result[arg['name']] = self.defaults[arg['short']]
-                    elif arg['default'] is None:
-                        result[arg['name']] = None
-
             if arg is not None and arg['name'] not in result:
                 raise KeyError(arg['name'])
 
@@ -165,6 +176,7 @@ class FileParser:
         parser = argparse.ArgumentParser(prog=prog, description=description, usage="%(prog)s [-h | -f? | options] filepath")
         parser.add_argument("-f?", string=self.get_help(description=f"{prog_name} Config File Help"), action=PrintAction, dest="filehelp", help="show config file help message and exit")
         parser.add_argument("filepath", type=argparse.FileType('r'), help="Path to the config file")
+        parser.add_argument("--vnn", type=VNNLib, help="Read Point, Label, and Radii from VNNLIB (override using the config file or command line flags)")
         for arg in self.arg_list:
             if arg is not None and arg['flag']:
                 if 'default' in arg and arg['default'] is not None and arg['default'] != argparse.SUPPRESS:
@@ -173,8 +185,18 @@ class FileParser:
                     default = arg['default']
                 parser.add_argument("--" + arg['short'], help=arg['help'], required=False, default=default)
         namespace = parser.parse_args(args)
+        if hasattr(namespace, "vnn"):
+            self.apply_vnnlib(namespace.vnn)
         self.defaults = vars(namespace)
         return namespace.filepath
+
+    def apply_vnnlib(self, vnn):
+        if not vnn.is_maximal():
+            raise TypeError("Passed in a non-maximal VNNLIB specification")
+        else:
+            self.defaults["pnt"] = vnn.get_centerpoint()
+            self.defaults["lbl"] = vnn.get_intended_class()
+            self.defaults["rad"] = vnn.get_radii()
 
 
 # To add a flag, the value must be optional and have a default value.
@@ -185,7 +207,7 @@ ARG_LIST = [
         {'flag': False, 'short': 'grf', 'name': "Graph",        'type': graphPathType,    'help': "Path to the graph",                                                                                                  'required': True},
         {'flag': False, 'short': 'in',  'name': "Input",        'type': str,              'help': "Graph's input node (If not given, will try to guess)",                                                               'required': False, 'default': None},
         {'flag': False, 'short': 'out', 'name': "Output",       'type': str,              'help': "Graph's output node (If not given, will try to guess)",                                                              'required': False, 'default': None},
-        {'flag': False, 'short': 'rad', 'name': "Radius",       'type': perDimensionType, 'help': "Single radius or per-dimension radii, comma separated",                                                              'required': True},
+        {'flag': False, 'short': 'rad', 'name': "Radius",       'type': perDimensionType, 'help': "Single radius or per-dimension radii, comma separated",                                                              'required': True,  'default': argparse.SUPPRESS},
         {'flag': False, 'short': 'grn', 'name': "Granularity",  'type': perDimensionType, 'help': "Single granularity or per-dimension granularities, comma/space separated",                                           'required': True},
         {'flag': False, 'short': 'lbl', 'name': "Label",        'type': int,              'help': "Intended class label number (use index of logit). If not provided, class of Point is assumed as the intended class", 'required': False, 'default': None},
         None,
