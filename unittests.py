@@ -11,6 +11,8 @@ from verapak.abstraction.rfgsm import RFGSM
 from verapak.abstraction.random_point import RandomPoint
 from verapak.partitioning.tools import hierarchicalDimensionRefinement
 from verapak.partitioning.largest_first import LargestFirstPartitioningStrategy
+from verapak.verification.discrete_search import DiscreteSearch
+from verapak.verification import ve
 import verapak_utils
 
 
@@ -190,6 +192,37 @@ class VerificationToolsTest(unittest.TestCase):
         vp = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
         all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
         self.assertEqual(len(all_points), 2**4)
+        g = np.array([0.5, 0.5, 0.5, 0.5])
+        all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
+        self.assertEqual(len(all_points), 4**4)
+        unique_points = np.unique(all_points, axis=0)
+        self.assertEqual(len(unique_points), len(all_points))
+        vp = np.array([0.1, 0.1, 0.1, 0.1])
+        all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
+        self.assertEqual(len(all_points), 4**4)
+        unique_points = np.unique(all_points, axis=0)
+        self.assertEqual(len(unique_points), len(all_points))
+
+
+class VerificationEngineTests(unittest.TestCase):
+    def setUp(self):
+        def sa(x):
+            return True
+        g = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
+        vp = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+
+        self.discrete_verifier = DiscreteSearch(
+            sa, point_tools.enumerate_valid_points, g, vp)
+        pass
+
+    def test_discrete_exhaustive_search(self):
+        r1 = [np.array([0, 0, 0, 0], dtype=np.float32),
+              np.array([2, 2, 2, 2], dtype=np.float32)]
+
+        def sp(p):
+            return np.all(p < 2.0) and np.all(p >= 0.0)
+        res, val = self.discrete_verifier.verification_impl(r1, sp)
+        self.assertEqual(res, ve.SAFE)
 
 
 if __name__ == "__main__":

@@ -78,19 +78,19 @@ def get_amount_valid_points(region, granularity, valid_point):
 
 def _enumerate_impl(curPoint, curIndex, region, granularity):
     if curIndex >= region[0].size:
-        yield True
+        yield None
         return
     cp_point = curPoint.copy()
     reg_idx = np.unravel_index(curIndex, region[0].shape)
     while cp_point[reg_idx] < region[1][reg_idx]:
-        last_val = None
+        last_val = False
         for i in _enumerate_impl(cp_point, curIndex + 1, region, granularity):
-            if not (i is True):
+            if not (i is None):
                 yield i
             else:
-                last_val = i
-        if last_val is True:
-            yield cp_point
+                last_val = True
+        if last_val:
+            yield cp_point.copy()
         if granularity[reg_idx] <= 0.0:
             break
         cp_point[reg_idx] += granularity[reg_idx]
