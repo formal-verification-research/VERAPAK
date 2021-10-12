@@ -34,49 +34,6 @@ def perDimensionType(string):
         raise ValueError("No value given")
     return retVal
 
-def get_strategy(module):
-    if module in ["dimension_ranking", "partitioning"]:
-        return lambda name : name
-    def import_submodule(name):
-        try:
-            if "." in name:
-                submodule = name.split(".", 1)[0]
-                function = name.split(".", 1)[1]
-                getattr(import_module(f"{module}.{submodule}"), function)() # Get the submodule `submodule`, and call the specified method.
-            else:
-                getattr(import_module(f"{module}.{name}"), "IMPL")() # Get the submodule `name`, and call the default method.
-        except ModuleNotFoundError:
-            print(f"No module \"{module}.{name}\" was found")
-            exit(1)
-        except AttributeError:
-            if "." in name:
-                submodule = name.split(".", 1)[0]
-                function = name.split(".", 1)[1]
-                print(f"Module \"{module}.{name}\" has no \"{function}\" function")
-            else:
-                print(f"Module \"{module}.{name}\" has no \"IMPL\" function")
-            exit(1)
-        except Exception as ex:
-            raise Exception(ex)
-            exit(1)
-
-    return import_submodule
-
-def get_strategy_choices(module):
-    submodules = []
-    for submodule in pkgutil.iter_modules([module]):
-        submodule_obj = submodule.module_finder.find_module(submodule.name)
-        with open(submodule_obj.path, "r") as f:
-            for line in f:
-                if re.match(r"\A[ ]*def[ ]*IMPL[ ]*\([ ]*\)[ ]*:", line):
-                    submodules.append(submodule.name)
-                    break
-
-    ret_str = "("
-    ret_str += " | ".join(submodules)
-    ret_str += " | ...)"
-    return ret_str
-
 class PrintAction(argparse.Action):
     def __init__(self,
                  option_strings,

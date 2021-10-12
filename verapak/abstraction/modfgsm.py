@@ -1,7 +1,7 @@
 from .ae import AbstractionEngine
 from .center_point import CenterPoint
 import numpy as np
-from ..dimension_ranking.naive import NaiveDimRanking
+from ..dimension_ranking.by_index import ByIndex
 import math
 from ..snap import point_to_domain
 
@@ -14,7 +14,7 @@ def _min_dim(region):
 
 class ModFGSM(AbstractionEngine):
 
-    def __init__(self, grad_func, granularity, fallback_strategy=None, fallback_predicate=lambda region: False, percent_fgsm=1, dim_selection_strategy=NaiveDimRanking()):
+    def __init__(self, grad_func, granularity, fallback_strategy=None, fallback_predicate=lambda region: False, percent_fgsm=1, dim_selection_strategy=ByIndex()):
         self.fallback_strategy = fallback_strategy
         self.fallback_predicate = fallback_predicate
         self.percent_fgsm = percent_fgsm

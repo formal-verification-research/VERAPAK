@@ -1,3 +1,4 @@
+from verapak import strategy_registry
 import unittest
 import numpy as np
 from verapak.utilities import point_tools
