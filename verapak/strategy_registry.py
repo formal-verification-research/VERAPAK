@@ -20,3 +20,9 @@ ABSTRACTION_STRATEGIES = {
     "fgsm": fgsm.FGSM,
     "random": random_point.RandomPoint,
     "rfgsm": rfgsm.RFGSM}
+
+ALL_STRATEGIES = {
+    'verification': VERIFICATION_STRATEGIES,
+    'partitioning': PARTITIONING_STRATEGIES,
+    'dimension_ranking': DIMENSION_RANKING_STRATEGIES,
+    'abstraction': ABSTRACTION_STRATEGIES}

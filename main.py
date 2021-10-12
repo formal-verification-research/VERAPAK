@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import verapak.model_tools.model_base
-from verapak.cmdline import parse_args
+from verapak.parse_arg_tools import parse_args
 
 
 def setup(config):
@@ -24,7 +24,8 @@ def setup(config):
     if len(config["Radius"]) == 1:
         config["Radius"] = np.full_like(config["Point"], config["Radius"][0])
     else:
-        config["Radius"] = config["Radius"].reshape(config["Point"].shape).astype(config["Graph"].input_dtype)
+        config["Radius"] = config["Radius"].reshape(
+            config["Point"].shape).astype(config["Graph"].input_dtype)
 
 
 def main(config):
@@ -33,5 +34,6 @@ def main(config):
 
 if __name__ == "__main__":
     config = parse_args(sys.argv[1:], prog=sys.argv[0])
-    setup(config)
+    print(config)
+    # setup(config)
     main(config)
