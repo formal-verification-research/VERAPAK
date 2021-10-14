@@ -143,16 +143,29 @@ def main(config):
                 unknown_set.insert(*r)
                 num_valid_points_in_unknown_set += num_valid_points_in_r
 
-    def report_region_percentages():
+    last_report_time = time.time()
+
+    def report_region_percentages(bypass=False):
+        nonlocal last_report_time
+        et = time.time() - last_report_time
+        if et < config['report_interval_seconds'] and not bypass:
+            return
         percent_unsafe = Decimal(
-            num_valid_points_in_unsafe_set) / num_valid_points_in_initial_region * 100
+            num_valid_points_in_unsafe_set) / num_valid_points_in_initial_region * Decimal(100)
         percent_safe = Decimal(num_valid_points_in_safe_set) / \
-            num_valid_points_in_initial_region * 100
+            num_valid_points_in_initial_region * Decimal(100)
         percent_unknown = Decimal(
-            num_valid_points_in_unknown_set) / num_valid_points_in_initial_region * 100
-        print('percent unknown', percent_unknown)
-        print('percent found unsafe', percent_unsafe)
-        print('percent found safe', percent_safe)
+            num_valid_points_in_unknown_set) / num_valid_points_in_initial_region * Decimal(100)
+        print(f'percent unknown: {percent_unknown}%')
+        print(f'percent found unsafe: {percent_unsafe}%')
+        print(f'percent found safe: {percent_safe}%')
+        print('number adversarial examples', adversarial_examples.size())
+
+        percent_left_over = Decimal(
+            100) - percent_unknown - percent_unsafe - percent_safe
+        if percent_left_over > 0:
+            print(f'currently processing: {percent_left_over}%')
+        last_report_time = time.time()
 
     try:
         while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout_minutes']):
@@ -234,6 +247,11 @@ def main(config):
             elapsed_time = (time.time() - start_time) / 60.0
     except KeyboardInterrupt as ex:
         pass
+
+    print('\n\n')
+    print('Final Report')
+    print('############################')
+    report_region_percentages(True)
 
 
 if __name__ == "__main__":
