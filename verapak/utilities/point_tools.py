@@ -2,6 +2,10 @@ import numpy as np
 import math
 
 
+def point_in_region(region, point):
+    return np.all(point >= region[0]) and np.all(point < region[1])
+
+
 def granularity_to_array(granularity, point=None):
     if point is None and not isinstance(granularity, np.ndarray) and not isinstance(granularity, list):
         raise ValueError(

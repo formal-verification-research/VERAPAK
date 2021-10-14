@@ -1,12 +1,15 @@
 import numpy as np
+import time
 import queue
 import sys
 from verapak.model_tools import model_base
 from verapak.parse_arg_tools import parse_args
-from verapak.utilities.point_tools import granularity_to_array, get_amount_valid_points
+from verapak.utilities.point_tools import *
 import tensorflow as tf
 import verapak_utils
 from verapak import snap
+from verapak.verification.ve import *
+from decimal import *
 
 
 def setup(config):
@@ -77,12 +80,160 @@ def setup(config):
 def main(config):
     setup(config)
 
+    start_time = time.time()
+
     unknown_set = verapak_utils.RegionSet()
     adversarial_examples = verapak_utils.PointSet()
     unsafe_set = queue.Queue()
     safe_set = verapak_utils.RegionSet()
 
-    unknown_set.insert(*config['initial_region'])
+    label_classification = np.argmax(config['label'].flatten())
+
+    def safety_predicate(point):
+        classification = np.argmax(config['graph'].evaluate(point).flatten())
+        return classification == label_classification
+
+    num_valid_points_in_initial_region = get_amount_valid_points(
+        config['initial_region'], config['granularity'], config['initial_point'])
+
+    num_valid_points_in_unsafe_set = 0
+    num_valid_points_in_unknown_set = 0
+    num_valid_points_in_safe_set = 0
+
+    if not safety_predicate(config['initial_point']):
+        adversarial_examples.insert(config['initial_point'])
+        unsafe_set.put((config['initial_region'], config['initial_point']))
+        num_valid_points_in_unsafe_set += num_valid_points_in_initial_region
+    else:
+        unknown_set.insert(*config['initial_region'])
+        num_valid_points_in_unknown_set += num_valid_points_in_initial_region
+
+    num_valid_points_in_initial_region = Decimal(
+        num_valid_points_in_initial_region)
+
+    elapsed_time = (time.time() - start_time) / 60.0
+    use_timeout = config['timeout_minutes'] != 0
+
+    first_time_flag = False
+
+    def report_first_adversarial_example():
+        nonlocal first_time_flag
+        if adversarial_examples.size() <= 0:
+            return
+        if first_time_flag:
+            return
+        first_time_flag = True
+        et = (time.time() - start_time)
+        print(f'found first adversarial example in {et} seconds')
+        for adv_example in adversarial_examples.elements():
+            print(adv_example.shape)
+
+    def partition_unsafe_region(region, adv_example):
+        nonlocal num_valid_points_in_unsafe_set
+        nonlocal num_valid_points_in_unknown_set
+        partition = config['partitioning_strategy'].partition_impl(
+            region)
+        for r in partition:
+            num_valid_points_in_r = get_amount_valid_points(
+                r, config['granularity'], config['initial_point'])
+            if point_in_region(r, adv_example):
+                unsafe_set.put_nowait((r, adv_example))
+                num_valid_points_in_unsafe_set += num_valid_points_in_r
+            else:
+                unknown_set.insert(*r)
+                num_valid_points_in_unknown_set += num_valid_points_in_r
+
+    def report_region_percentages():
+        percent_unsafe = Decimal(
+            num_valid_points_in_unsafe_set) / num_valid_points_in_initial_region * 100
+        percent_safe = Decimal(num_valid_points_in_safe_set) / \
+            num_valid_points_in_initial_region * 100
+        percent_unknown = Decimal(
+            num_valid_points_in_unknown_set) / num_valid_points_in_initial_region * 100
+        print('percent unknown', percent_unknown)
+        print('percent found unsafe', percent_unsafe)
+        print('percent found safe', percent_safe)
+
+    try:
+        while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout_minutes']):
+            report_first_adversarial_example()
+            report_region_percentages()
+
+            region, adv_example = [unknown_set.pop_front(
+            )[1], None] if unknown_set.size() > 0 else unsafe_set.get_nowait()
+            region = [x.reshape(config['input_shape']).astype(
+                config['input_dtype']) for x in region]
+
+            num_valid_points = get_amount_valid_points(
+                region, config['granularity'], config['initial_point'])
+
+            if adv_example is None:
+                num_valid_points_in_unknown_set -= num_valid_points
+            else:
+                num_valid_points_in_unsafe_set -= num_valid_points
+
+            if num_valid_points <= 0:
+                continue
+
+            if not adv_example is None:
+                if num_valid_points > 1:
+                    partition_unsafe_region(region, adv_example)
+                elif num_valid_points == 1:
+                    num_valid_points_in_unsafe_set += 1
+                continue
+
+            verif_result, adv_example = config['verification_strategy'].verification_impl(
+                region, safety_predicate)
+
+            if verif_result == SAFE:
+                num_valid_points_in_safe_set += num_valid_points
+                safe_set.insert(*region)
+                continue
+            elif verif_result == UNSAFE:
+                adversarial_examples.insert(adv_example)
+                if num_valid_points > 1:
+                    partition_unsafe_region(region, adv_example)
+                continue
+
+# must be unknown
+            partition = config['partitioning_strategy'].partition_impl(region)
+            for r in partition:
+                abstraction = config['abstraction_strategy'].abstraction_impl(
+                    r, config['num_abstractions'])
+                found_adv_in_r = False
+                num_valid_points_in_r = get_amount_valid_points(
+                    r, config['granularity'], config['initial_point'])
+                abstraction_evaluated = [(p, safety_predicate(p))
+                                         for p in abstraction]
+                for point, safe in abstraction_evaluated:
+                    if not safe:
+                        adversarial_examples.insert(point)
+                for point, safe in abstraction_evaluated:
+                    if not safe:
+                        if point_in_region(r, point):
+                            num_valid_points_in_unsafe_set += num_valid_points_in_r
+                            unsafe_set.put_nowait((r, point))
+                            found_adv_in_r = True
+                            break
+                        else:  # attempt to find the potential adversarial example in unknown region set
+                            find_success, potential_region = unknown_set.get_and_remove_region_containing_point(
+                                point)
+                            if find_success:
+                                potential_region = [x.reshape(config['input_shape']).astype(
+                                    config['input_dtype']) for x in potential_region]
+                                num_valid_points_in_pr = get_amount_valid_points(
+                                    potential_region, config['granularity'], config['initial_point'])
+                                num_valid_points_in_unsafe_set += num_valid_points_in_pr
+                                num_valid_points_in_unknown_set -= num_valid_points_in_pr
+                                unsafe_set.put_nowait(
+                                    (potential_region, point))
+                if not found_adv_in_r:
+                    num_valid_points_in_unknown_set += num_valid_points_in_r
+                    unknown_set.insert(r)
+
+            elapsed_time = (time.time() - start_time) / 60.0
+    except KeyboardInterrupt as ex:
+        pass
 
 
 if __name__ == "__main__":

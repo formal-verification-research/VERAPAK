@@ -50,7 +50,8 @@ class ModFGSM(AbstractionEngine):
         M = np.full(region[0].shape, 0.0)
         num_dims_fgsm = math.floor(self.balance_factor * region[0].size)
         unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
-        M[unraveled_sorted_dims] = 1.0
+        for dim_index in unraveled_sorted_dims:
+            M[dim_index] = 1.0
         fgsm_part = gradient_sign * M
         Mnot = M * -1.0 + 1.0
 

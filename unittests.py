@@ -98,12 +98,30 @@ class LargestFirstDimSelectionTests(unittest.TestCase):
 
 
 class PointSetTests(unittest.TestCase):
+    def setUp(self):
+        self.p1 = np.array([1, 4, 6, 3])
+        self.r1 = [self.p1, self.p1 + 1]
+        self.r2 = [self.p1 + 1, self.p1 + 2]
+        self.r3 = [self.p1 + 2, self.p1 + 4]
+
     def test_point_set(self):
         point_set = verapak_utils.PointSet()
         self.assertEqual(point_set.size(), 0)
 
     def test_region_set(self):
         region_set = verapak_utils.RegionSet()
+        self.assertEqual(region_set.size(), 0)
+        region_set.insert(*self.r1)
+        region_set.insert(*self.r2)
+        self.assertEqual(region_set.size(), 2)
+        region_set.insert(*self.r3)
+        self.assertEqual(region_set.size(), 3)
+        success, region = region_set.pop_front()
+        self.assertEqual(region_set.size(), 2)
+        region_set.pop_front()
+        region_set.pop_front()
+        success, region = region_set.pop_front()
+        self.assertFalse(success)
         self.assertEqual(region_set.size(), 0)
 
 

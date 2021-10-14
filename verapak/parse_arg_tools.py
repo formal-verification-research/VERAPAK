@@ -201,6 +201,15 @@ SUPPORTED_ARGUMENTS = [
                 'help': "Threshold number of discrete points under which verification should occur",
                 'default': [1.0],
             }
+    },
+    {
+        'name': 'timeout_minutes',
+        'arg_params':
+            {
+                'type': int,
+                'help': "Number of minutes to run the program before reporting all found adversarial examples and timing out (set to 0 for 'run until interrupted')",
+                'default': 5,
+            }
     }]
 
 
