@@ -13,12 +13,7 @@ def point_to_domain(point, domain):
 
 
 def to_nearest_valid_point(point, initial_point, granularity):
-    nearest = point[:]
-    if type(granularity) == type([]):
-        granularity = np.array(granularity)
-    elif type(granularity) != type(np.empty(0)):
-        granularity = np.full(point.size, granularity)
-
+    nearest = point.copy()
     nearest -= initial_point            # Set the initial point as the origin
     # Scale the grid such that the granularity is an integer step in any direction
     nearest /= granularity

@@ -61,6 +61,7 @@ SUPPORTED_ARGUMENTS = [
             {
                 'type': directoryType,
                 'help': 'path to output directory where adversarial examples will be stored',
+                'default': '.'
             }
     },
     {

@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import time
 import queue
 import sys
@@ -92,6 +93,9 @@ def main(config):
     def safety_predicate(point):
         classification = np.argmax(config['graph'].evaluate(point).flatten())
         return classification == label_classification
+
+    def snap_point_to_domain_and_valid(point):
+        return snap.point_to_domain(snap.to_nearest_valid_point(point, config['initial_point'], config['granularity']), config['domain'])
 
     num_valid_points_in_initial_region = get_amount_valid_points(
         config['initial_region'], config['granularity'], config['initial_point'])
@@ -208,16 +212,17 @@ def main(config):
                     partition_unsafe_region(region, adv_example)
                 continue
 
-# must be unknown
             partition = config['partitioning_strategy'].partition_impl(region)
             for r in partition:
                 abstraction = config['abstraction_strategy'].abstraction_impl(
                     r, config['num_abstractions'])
+                snapped_abstraction = [
+                    snap_point_to_domain_and_valid(x) for x in abstraction]
                 found_adv_in_r = False
                 num_valid_points_in_r = get_amount_valid_points(
                     r, config['granularity'], config['initial_point'])
                 abstraction_evaluated = [(p, safety_predicate(p))
-                                         for p in abstraction]
+                                         for p in snapped_abstraction]
                 for point, safe in abstraction_evaluated:
                     if not safe:
                         adversarial_examples.insert(point)
@@ -252,6 +257,11 @@ def main(config):
     print('Final Report')
     print('############################')
     report_region_percentages(True)
+
+    adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
+    print(adv_examples_numpy.shape)
+    np.save(os.path.join(config['output_dir'],
+                         'adversarial_examples.npy'), adv_examples_numpy)
 
 
 if __name__ == "__main__":
