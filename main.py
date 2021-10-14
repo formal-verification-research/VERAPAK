@@ -10,7 +10,6 @@ import tensorflow as tf
 import verapak_utils
 from verapak import snap
 from verapak.verification.ve import *
-from decimal import *
 
 
 def setup(config):
@@ -79,99 +78,94 @@ def setup(config):
 
 
 def main(config):
-    setup(config)
+    try:
+        setup(config)
+        start_time = time.time()
+        unknown_set = verapak_utils.RegionSet()
+        adversarial_examples = verapak_utils.PointSet()
+        unsafe_set = queue.Queue()
+        safe_set = verapak_utils.RegionSet()
 
-    start_time = time.time()
+        label_classification = np.argmax(config['label'].flatten())
 
-    unknown_set = verapak_utils.RegionSet()
-    adversarial_examples = verapak_utils.PointSet()
-    unsafe_set = queue.Queue()
-    safe_set = verapak_utils.RegionSet()
+        def safety_predicate(point):
+            classification = np.argmax(
+                config['graph'].evaluate(point).flatten())
+            return classification == label_classification
 
-    label_classification = np.argmax(config['label'].flatten())
+        def snap_point_to_domain_and_valid(point):
+            return snap.point_to_domain(snap.to_nearest_valid_point(point, config['initial_point'], config['granularity']), config['domain'])
 
-    def safety_predicate(point):
-        classification = np.argmax(config['graph'].evaluate(point).flatten())
-        return classification == label_classification
+        num_valid_points_in_initial_region = get_amount_valid_points(
+            config['initial_region'], config['granularity'], config['initial_point'])
 
-    def snap_point_to_domain_and_valid(point):
-        return snap.point_to_domain(snap.to_nearest_valid_point(point, config['initial_point'], config['granularity']), config['domain'])
+        num_valid_points_in_unsafe_set = 0
+        num_valid_points_in_unknown_set = 0
+        num_valid_points_in_safe_set = 0
 
-    num_valid_points_in_initial_region = get_amount_valid_points(
-        config['initial_region'], config['granularity'], config['initial_point'])
+        if not safety_predicate(config['initial_point']):
+            adversarial_examples.insert(config['initial_point'])
+            unsafe_set.put((config['initial_region'], config['initial_point']))
+            num_valid_points_in_unsafe_set += num_valid_points_in_initial_region
+        else:
+            unknown_set.insert(*config['initial_region'])
+            num_valid_points_in_unknown_set += num_valid_points_in_initial_region
 
-    num_valid_points_in_unsafe_set = 0
-    num_valid_points_in_unknown_set = 0
-    num_valid_points_in_safe_set = 0
+        elapsed_time = (time.time() - start_time) / 60.0
+        use_timeout = config['timeout_minutes'] != 0
 
-    if not safety_predicate(config['initial_point']):
-        adversarial_examples.insert(config['initial_point'])
-        unsafe_set.put((config['initial_region'], config['initial_point']))
-        num_valid_points_in_unsafe_set += num_valid_points_in_initial_region
-    else:
-        unknown_set.insert(*config['initial_region'])
-        num_valid_points_in_unknown_set += num_valid_points_in_initial_region
+        first_time_flag = False
 
-    num_valid_points_in_initial_region = Decimal(
-        num_valid_points_in_initial_region)
+        def report_first_adversarial_example():
+            nonlocal first_time_flag
+            if adversarial_examples.size() <= 0:
+                return
+            if first_time_flag:
+                return
+            first_time_flag = True
+            et = (time.time() - start_time)
+            print(f'found first adversarial example in {et} seconds')
+            for adv_example in adversarial_examples.elements():
+                print(adv_example.shape)
 
-    elapsed_time = (time.time() - start_time) / 60.0
-    use_timeout = config['timeout_minutes'] != 0
+        def partition_unsafe_region(region, adv_example):
+            nonlocal num_valid_points_in_unsafe_set
+            nonlocal num_valid_points_in_unknown_set
+            partition = config['partitioning_strategy'].partition_impl(
+                region)
+            for r in partition:
+                num_valid_points_in_r = get_amount_valid_points(
+                    r, config['granularity'], config['initial_point'])
+                if point_in_region(r, adv_example):
+                    unsafe_set.put_nowait((r, adv_example))
+                    num_valid_points_in_unsafe_set += num_valid_points_in_r
+                else:
+                    unknown_set.insert(*r)
+                    num_valid_points_in_unknown_set += num_valid_points_in_r
 
-    first_time_flag = False
-
-    def report_first_adversarial_example():
-        nonlocal first_time_flag
-        if adversarial_examples.size() <= 0:
-            return
-        if first_time_flag:
-            return
-        first_time_flag = True
-        et = (time.time() - start_time)
-        print(f'found first adversarial example in {et} seconds')
-        for adv_example in adversarial_examples.elements():
-            print(adv_example.shape)
-
-    def partition_unsafe_region(region, adv_example):
-        nonlocal num_valid_points_in_unsafe_set
-        nonlocal num_valid_points_in_unknown_set
-        partition = config['partitioning_strategy'].partition_impl(
-            region)
-        for r in partition:
-            num_valid_points_in_r = get_amount_valid_points(
-                r, config['granularity'], config['initial_point'])
-            if point_in_region(r, adv_example):
-                unsafe_set.put_nowait((r, adv_example))
-                num_valid_points_in_unsafe_set += num_valid_points_in_r
-            else:
-                unknown_set.insert(*r)
-                num_valid_points_in_unknown_set += num_valid_points_in_r
-
-    last_report_time = time.time()
-
-    def report_region_percentages(bypass=False):
-        nonlocal last_report_time
-        et = time.time() - last_report_time
-        if et < config['report_interval_seconds'] and not bypass:
-            return
-        percent_unsafe = Decimal(
-            num_valid_points_in_unsafe_set) / num_valid_points_in_initial_region * Decimal(100)
-        percent_safe = Decimal(num_valid_points_in_safe_set) / \
-            num_valid_points_in_initial_region * Decimal(100)
-        percent_unknown = Decimal(
-            num_valid_points_in_unknown_set) / num_valid_points_in_initial_region * Decimal(100)
-        print(f'percent unknown: {percent_unknown}%')
-        print(f'percent found unsafe: {percent_unsafe}%')
-        print(f'percent found safe: {percent_safe}%')
-        print('number adversarial examples', adversarial_examples.size())
-
-        percent_left_over = Decimal(
-            100) - percent_unknown - percent_unsafe - percent_safe
-        if percent_left_over > 0:
-            print(f'currently processing: {percent_left_over}%')
         last_report_time = time.time()
 
-    try:
+        def report_region_percentages(bypass=False):
+            nonlocal last_report_time
+            et = time.time() - last_report_time
+            if et < config['report_interval_seconds'] and not bypass:
+                return
+            percent_unsafe = num_valid_points_in_unsafe_set / \
+                num_valid_points_in_initial_region * 100
+            percent_safe = num_valid_points_in_safe_set / \
+                num_valid_points_in_initial_region * 100
+            percent_unknown = num_valid_points_in_unknown_set / \
+                num_valid_points_in_initial_region * 100
+            print(f'percent unknown: {percent_unknown}%')
+            print(f'percent found unsafe: {percent_unsafe}%')
+            print(f'percent found safe: {percent_safe}%')
+            print('number adversarial examples', adversarial_examples.size())
+
+            percent_left_over = 100 - percent_unknown - percent_unsafe - percent_safe
+            if percent_left_over > 0:
+                print(f'currently processing: {percent_left_over}%')
+            last_report_time = time.time()
+
         while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout_minutes']):
             report_first_adversarial_example()
             report_region_percentages()
@@ -250,18 +244,20 @@ def main(config):
                     unknown_set.insert(r)
 
             elapsed_time = (time.time() - start_time) / 60.0
-    except KeyboardInterrupt as ex:
-        pass
+    except (KeyboardInterrupt, Exception) as e:
+        print(e)
 
-    print('\n\n')
+    print('\n')
     print('Final Report')
     print('############################')
     report_region_percentages(True)
 
     adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
-    print(adv_examples_numpy.shape)
-    np.save(os.path.join(config['output_dir'],
-                         'adversarial_examples.npy'), adv_examples_numpy)
+    output_file = os.path.join(
+        config['output_dir'], 'adversarial_examples.npy')
+    print(f'saving adversarial examples to "{output_file}"...')
+    np.save(output_file, adv_examples_numpy)
+    print('done')
 
 
 if __name__ == "__main__":
