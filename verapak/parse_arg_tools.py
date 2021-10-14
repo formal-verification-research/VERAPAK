@@ -3,6 +3,7 @@ import sys
 import os
 from . import strategy_registry
 import pathlib
+from .utilities.vnnlib_lib import VNNLib
 
 
 def get_strategy_choices(category):
@@ -52,7 +53,16 @@ SUPPORTED_ARGUMENTS = [
             {
                 'type': fileType,
                 'help': 'Configuration file: key value pairs (one per line) in this format KEY :: VALUE. Keys are the same as command line argument names in this help and values follow the same format.',
-                'default': "verapak.conf"
+                'default': None
+            }
+    },
+    {
+        'name': 'vnnlib',
+        'arg_params':
+            {
+                'type': fileType,
+                'help': 'VNNLIB file: parse out the centerpoint, intended label, and radii, and use them if no others are provided in the config_file or command line flags.',
+                'default': None
             }
     },
     {
@@ -271,22 +281,37 @@ def _getThreads():
 def parse_file_args(config_file):
     return FileParser(config_file, SUPPORTED_ARGUMENTS).parse_file()
 
+def parse_vnnlib_args(vnnlib_file):
+    vnn = VNNLib(vnnlib_file)
+    return {
+            "initial_point": vnn.get_centerpoint().tolist(),
+            "label": vnn.get_intended_class(),
+            "radius": vnn.get_radii().tolist()
+    }
 
-def combine_args_priority_cmd(cmd_args, file_args, supported_args):
-    cmd_dict = vars(cmd_args)
+
+def combine_args(supported_args, *arg_sets):
+    """ Combine args with priority from first in the list to last in the list """
+    base_dict = arg_sets[0]
     sup_arg_dict = {arg['name']: arg['arg_params'] for arg in supported_args}
-    for key, value in cmd_dict.items():
-        supported_arg = sup_arg_dict[key]
-        if key in file_args:
-            if value is None or ('default' in supported_arg and value == supported_arg['default']):
-                cmd_dict[key] = file_args[key]
-    return cmd_dict
+    for i in range(1,len(arg_sets)):
+        this_dict = arg_sets[i]
+        if this_dict is None:
+            continue
+
+        for key, value in base_dict.items():
+            supported_arg = sup_arg_dict[key]
+            if key in this_dict:
+                if value is None or ('default' in supported_arg and value == supported_arg['default']):
+                    base_dict[key] = this_dict[key]
+    return base_dict
 
 
 def parse_args(args, prog):
     cmd_args = parse_cmdline_args(args, prog)
     file_args = parse_file_args(cmd_args.config_file)
-    return combine_args_priority_cmd(cmd_args, file_args, SUPPORTED_ARGUMENTS)
+    vnnlib_args = parse_vnnlib_args(cmd_args.vnnlib_file)
+    return combine_args(SUPPORTED_ARGUMENTS, cmd_args, file_args, vnnlib_args)
 
 
 if __name__ == "__main__":

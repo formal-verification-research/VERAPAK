@@ -76,7 +76,7 @@ class VNNLib():
         return self._radii
 
     def get_intended_class(self):
-        if not self.check_maximal():
+        if not self.is_maximal():
             raise ValueError("Cannot get the \"intended\" class of a non-maximal VNNLib")
         else:
             return self._maximal_class
