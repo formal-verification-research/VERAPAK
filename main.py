@@ -248,6 +248,8 @@ def main(config):
             elapsed_time = (time.time() - start_time) / 60.0
     except (KeyboardInterrupt, Exception) as e:
         print(e)
+    except:
+        pass
 
     print('\n')
     print('Final Report')
