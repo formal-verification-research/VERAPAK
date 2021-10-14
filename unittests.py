@@ -1,15 +1,18 @@
+from verapak import strategy_registry
 import unittest
 import numpy as np
 from verapak.utilities import point_tools
 from verapak.dimension_ranking import gradient_based
 from verapak.dimension_ranking.largest_first import LargestFirstDimSelection
 from verapak.abstraction.center_point import CenterPoint
-from verapak.abstraction.fallback import FallbackStrategy
 from verapak.abstraction.fgsm import FGSM
 from verapak.abstraction.modfgsm import ModFGSM
+from verapak.abstraction.rfgsm import RFGSM
 from verapak.abstraction.random_point import RandomPoint
 from verapak.partitioning.tools import hierarchicalDimensionRefinement
 from verapak.partitioning.largest_first import LargestFirstPartitioningStrategy
+from verapak.verification.discrete_search import DiscreteSearch
+from verapak.verification import ve
 import verapak_utils
 
 
@@ -95,12 +98,30 @@ class LargestFirstDimSelectionTests(unittest.TestCase):
 
 
 class PointSetTests(unittest.TestCase):
+    def setUp(self):
+        self.p1 = np.array([1, 4, 6, 3])
+        self.r1 = [self.p1, self.p1 + 1]
+        self.r2 = [self.p1 + 1, self.p1 + 2]
+        self.r3 = [self.p1 + 2, self.p1 + 4]
+
     def test_point_set(self):
         point_set = verapak_utils.PointSet()
         self.assertEqual(point_set.size(), 0)
 
     def test_region_set(self):
         region_set = verapak_utils.RegionSet()
+        self.assertEqual(region_set.size(), 0)
+        region_set.insert(*self.r1)
+        region_set.insert(*self.r2)
+        self.assertEqual(region_set.size(), 2)
+        region_set.insert(*self.r3)
+        self.assertEqual(region_set.size(), 3)
+        success, region = region_set.pop_front()
+        self.assertEqual(region_set.size(), 2)
+        region_set.pop_front()
+        region_set.pop_front()
+        success, region = region_set.pop_front()
+        self.assertFalse(success)
         self.assertEqual(region_set.size(), 0)
 
 
@@ -158,12 +179,68 @@ class LargestFirstPartitioningTest(unittest.TestCase):
         self.assertFalse(acc[1])
         self.assertFalse(acc[3])
 
+
 class ModFGSMTest(unittest.TestCase):
+    def setUp(self):
+        self.granularity = np.array([1, 1, 1, 1])
+        self.fgsm = ModFGSM(
+            gradient_function=lambda x: x, granularity=np.array([1, 1, 1, 1], dtype=np.float64))
+        self.rfgsm = RFGSM(gradient_function=lambda x: 0.1 * x,
+                           granularity=np.array([1.0, 1.0, 1.0, 1.0]), balance_factor=0.5)
+
+    def test_modfgsm(self):
+        region1 = [np.array([0, 0, 0, 0], dtype=np.float64),
+                   np.array([4, 4, 4, 4], dtype=np.float64)]
+        res = self.fgsm.abstraction_impl(region1, 4)
+        self.assertEqual(len(res), 4)
+        res = self.fgsm.abstraction_impl(region1, 8)
+        self.assertEqual(len(res), 8)
+        res = self.rfgsm.abstraction_impl(region1, 4)
+        self.assertEqual(len(res), 4)
+
+
+class VerificationToolsTest(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_modfgsm(self):
+    def test_discrete_point_enumerator(self):
+        r1 = [np.array([0, 0, 0, 0], dtype=np.float32),
+              np.array([2, 2, 2, 2], dtype=np.float32)]
+        g = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
+        vp = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
+        self.assertEqual(len(all_points), 2**4)
+        g = np.array([0.5, 0.5, 0.5, 0.5])
+        all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
+        self.assertEqual(len(all_points), 4**4)
+        unique_points = np.unique(all_points, axis=0)
+        self.assertEqual(len(unique_points), len(all_points))
+        vp = np.array([0.1, 0.1, 0.1, 0.1])
+        all_points = list(point_tools.enumerate_valid_points(r1, g, vp))
+        self.assertEqual(len(all_points), 4**4)
+        unique_points = np.unique(all_points, axis=0)
+        self.assertEqual(len(unique_points), len(all_points))
+
+
+class VerificationEngineTests(unittest.TestCase):
+    def setUp(self):
+        def sa(x):
+            return True
+        g = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
+        vp = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+
+        self.discrete_verifier = DiscreteSearch(10000, g, vp)
         pass
+
+    def test_discrete_exhaustive_search(self):
+        r1 = [np.array([0, 0, 0, 0], dtype=np.float32),
+              np.array([2, 2, 2, 2], dtype=np.float32)]
+
+        def sp(p):
+            return np.all(p < 2.0) and np.all(p >= 0.0)
+        res, val = self.discrete_verifier.verification_impl(r1, sp)
+        self.assertEqual(res, ve.SAFE)
+
 
 if __name__ == "__main__":
     unittest.main()

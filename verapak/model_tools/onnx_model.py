@@ -2,6 +2,7 @@ from .model_base import *
 import tensorflow as tf
 from .onnx_utils import *
 import onnx
+from onnx_tf.backend import prepare
 import numpy as np
 
 
@@ -16,12 +17,6 @@ class ONNXModel(ModelBase):
                          output_shape, input_dtype, output_dtype)
         self.model_internal.tensor_dict = self.model_internal.tf_module.gen_tensor_dict(
             {self.model_internal.inputs[0]: self._cast_point_input(np.zeros(self.input_shape))})
-
-    def _cast_point_input(self, point):
-        return point.reshape(self.input_shape).astype(self.input_dtype)
-
-    def _cast_point_output(self, point):
-        return point.reshape(self.output_shape).astype(self.output_dtype)
 
     def evaluate(self, point):
         return self.model_internal.run(self._cast_point_input(point))[0]
