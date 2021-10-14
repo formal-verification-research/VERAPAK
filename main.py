@@ -1,9 +1,12 @@
 import numpy as np
+import queue
 import sys
 from verapak.model_tools import model_base
 from verapak.parse_arg_tools import parse_args
-from verapak.utilities.point_tools import granularity_to_array
+from verapak.utilities.point_tools import granularity_to_array, get_amount_valid_points
 import tensorflow as tf
+import verapak_utils
+from verapak import snap
 
 
 def setup(config):
@@ -52,11 +55,34 @@ def setup(config):
         **config)
 
     config['verification_strategy'] = config['verification_strategy'](**config)
+    if len(config['domain_upper_bound']) == 1:
+        dub = np.full_like(
+            config['initial_point'], config['domain_upper_bound'][0])
+    else:
+        dub = np.array(config['domain_upper_bound']).reshape(
+            config['input_shape']).astype(config['input_dtype'])
+
+    if len(config['domain_lower_bound']) == 1:
+        dlb = np.full_like(
+            config['initial_point'], config['domain_lower_bound'][0])
+    else:
+        dlb = np.array(config['domain_lower_bound']).reshape(
+            config['input_shape']).astype(config['input_dtype'])
+
+    config['domain'] = [dlb, dub]
+    config['initial_region'] = snap.region_to_domain([config['initial_point'] - config['radius'],
+                                                      config['initial_point'] + config['radius']], config['domain'])
 
 
 def main(config):
     setup(config)
-    print(config)
+
+    unknown_set = verapak_utils.RegionSet()
+    adversarial_examples = verapak_utils.PointSet()
+    unsafe_set = queue.Queue()
+    safe_set = verapak_utils.RegionSet()
+
+    unknown_set.insert(*config['initial_region'])
 
 
 if __name__ == "__main__":

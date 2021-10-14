@@ -183,6 +183,24 @@ SUPPORTED_ARGUMENTS = [
                 'help': "Threshold number of discrete points under which verification should occur",
                 'default': 10000
             }
+    },
+    {
+        'name': 'domain_lower_bound',
+        'arg_params':
+            {
+                'type': numArrayType,
+                'help': "Threshold number of discrete points under which verification should occur",
+                'default': [0.0],
+            }
+    },
+    {
+        'name': 'domain_upper_bound',
+        'arg_params':
+            {
+                'type': numArrayType,
+                'help': "Threshold number of discrete points under which verification should occur",
+                'default': [1.0],
+            }
     }]
 
 
