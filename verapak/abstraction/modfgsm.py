@@ -14,13 +14,13 @@ def _min_dim(region):
 
 class ModFGSM(AbstractionEngine):
 
-    def __init__(self, grad_func, granularity, fallback_strategy=None, fallback_predicate=lambda region: False, percent_fgsm=1, dim_selection_strategy=ByIndex()):
+    def __init__(self, gradient_function, granularity, fallback_strategy=None, fallback_predicate=lambda region: False, balance_factor=1, dimension_ranking_strategy=ByIndex(), **kwargs):
         self.fallback_strategy = fallback_strategy
         self.fallback_predicate = fallback_predicate
-        self.percent_fgsm = percent_fgsm
-        self.gradient = grad_func
+        self.balance_factor = balance_factor
+        self.gradient_function = gradient_function
         self.granularity = granularity
-        self.dim_selection_strategy = dim_selection_strategy
+        self.dimension_ranking_strategy = dimension_ranking_strategy
 
     def abstraction_impl(self, region, num_abstractions):
         # Should fallback?
@@ -31,7 +31,7 @@ class ModFGSM(AbstractionEngine):
         center = CenterPoint().abstraction_impl(
             region, 1)[0]  # Get center point
         # Get sign of gradient
-        grad = self.gradient(center)
+        grad = self.gradient_function(center)
         gradient_sign = np.sign(grad)
 
         min_dimension_range, min_dimension_index = _min_dim(region)
@@ -42,13 +42,13 @@ class ModFGSM(AbstractionEngine):
         e1_upperbound = int(
             max_radius / self.granularity[min_dimension_index])
 
-        sorted_dims = self.dim_selection_strategy.rank_indices_impl(region)
+        sorted_dims = self.dimension_ranking_strategy.rank_indices_impl(region)
         unraveled_sorted_dims = [np.unravel_index(
             x, region[0].shape) for x in sorted_dims]
         if len(unraveled_sorted_dims[0]) == 1:
             unraveled_sorted_dims = [x[0] for x in unraveled_sorted_dims]
         M = np.full(region[0].shape, 0.0)
-        num_dims_fgsm = math.floor(self.percent_fgsm * region[0].size)
+        num_dims_fgsm = math.floor(self.balance_factor * region[0].size)
         unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
         M[unraveled_sorted_dims] = 1.0
         fgsm_part = gradient_sign * M

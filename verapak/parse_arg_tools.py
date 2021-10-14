@@ -156,6 +156,33 @@ SUPPORTED_ARGUMENTS = [
                 'help': "Partitioning strategy: (oneof {})".format(get_strategy_choices('partitioning')),
                 'default': strategy_registry.PARTITIONING_STRATEGIES['largest_first']
             }
+    },
+    {
+        'name': 'partitioning_divisor',
+        'arg_params':
+            {
+                'type': int,
+                'help': "Number of divisions on each dimension during partitioning",
+                'default': 2
+            }
+    },
+    {
+        'name': 'partitioning_num_dimensions',
+        'arg_params':
+            {
+                'type': int,
+                'help': "Number of dimensions to partition",
+                'default': 3
+            }
+    },
+    {
+        'name': 'verification_point_threshold',
+        'arg_params':
+            {
+                'type': int,
+                'help': "Threshold number of discrete points under which verification should occur",
+                'default': 10000
+            }
     }]
 
 

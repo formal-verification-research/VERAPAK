@@ -5,7 +5,6 @@ from verapak.utilities import point_tools
 from verapak.dimension_ranking import gradient_based
 from verapak.dimension_ranking.largest_first import LargestFirstDimSelection
 from verapak.abstraction.center_point import CenterPoint
-from verapak.abstraction.fallback import FallbackStrategy
 from verapak.abstraction.fgsm import FGSM
 from verapak.abstraction.modfgsm import ModFGSM
 from verapak.abstraction.rfgsm import RFGSM
@@ -167,9 +166,9 @@ class ModFGSMTest(unittest.TestCase):
     def setUp(self):
         self.granularity = np.array([1, 1, 1, 1])
         self.fgsm = ModFGSM(
-            grad_func=lambda x: x, granularity=np.array([1, 1, 1, 1], dtype=np.float64))
-        self.rfgsm = RFGSM(grad_func=lambda x: 0.1 * x,
-                           granularity=np.array([1.0, 1.0, 1.0, 1.0]), percent_fgsm=0.5)
+            gradient_function=lambda x: x, granularity=np.array([1, 1, 1, 1], dtype=np.float64))
+        self.rfgsm = RFGSM(gradient_function=lambda x: 0.1 * x,
+                           granularity=np.array([1.0, 1.0, 1.0, 1.0]), balance_factor=0.5)
 
     def test_modfgsm(self):
         region1 = [np.array([0, 0, 0, 0], dtype=np.float64),
@@ -212,8 +211,7 @@ class VerificationEngineTests(unittest.TestCase):
         g = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
         vp = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
 
-        self.discrete_verifier = DiscreteSearch(
-            sa, point_tools.enumerate_valid_points, g, vp)
+        self.discrete_verifier = DiscreteSearch(10000, g, vp)
         pass
 
     def test_discrete_exhaustive_search(self):
