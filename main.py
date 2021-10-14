@@ -78,13 +78,13 @@ def setup(config):
 
 
 def main(config):
+    unknown_set = verapak_utils.RegionSet()
+    adversarial_examples = verapak_utils.PointSet()
+    unsafe_set = queue.Queue()
+    safe_set = verapak_utils.RegionSet()
+
     try:
         setup(config)
-        start_time = time.time()
-        unknown_set = verapak_utils.RegionSet()
-        adversarial_examples = verapak_utils.PointSet()
-        unsafe_set = queue.Queue()
-        safe_set = verapak_utils.RegionSet()
 
         label_classification = np.argmax(config['label'].flatten())
 
@@ -102,6 +102,8 @@ def main(config):
         num_valid_points_in_unsafe_set = 0
         num_valid_points_in_unknown_set = 0
         num_valid_points_in_safe_set = 0
+
+        start_time = time.time()
 
         if not safety_predicate(config['initial_point']):
             adversarial_examples.insert(config['initial_point'])
