@@ -4,6 +4,7 @@ import os
 from . import strategy_registry
 import pathlib
 from .utilities.vnnlib_lib import VNNLib
+import numpy as np
 
 
 def get_strategy_choices(category):
@@ -39,11 +40,17 @@ def graphPathType(filePath):
         return filePath
     raise ValueError(f"{filePath} unsupported model type")
 
+def vnnPathType(filePath):
+    filePath = fileType(filePath)
+    if pathlib.Path(filePath).suffix.upper() == '.VNNLIB':
+        return filePath
+    raise ValueError(f"{filePath} unsupported vnnlib file")
+
 
 def numArrayType(string):
-    string = string.strip()
+    string = string
     l = string.split(',')
-    return [float(x) for x in l]
+    return [float(x.strip()) for x in l]
 
 
 SUPPORTED_ARGUMENTS = [
@@ -309,9 +316,20 @@ def combine_args(supported_args, *arg_sets):
 
 def parse_args(args, prog):
     cmd_args = parse_cmdline_args(args, prog)
-    file_args = parse_file_args(cmd_args.config_file)
-    vnnlib_args = parse_vnnlib_args(cmd_args.vnnlib_file)
-    return combine_args(SUPPORTED_ARGUMENTS, cmd_args, file_args, vnnlib_args)
+
+    if hasattr(cmd_args, "config_file"):
+        file_args = parse_file_args(cmd_args.config_file)
+    else:
+        file_args = None
+
+    if hasattr(cmd_args, "vnnlib_file"):
+        vnnlib_args = parse_vnnlib_args(cmd_args.vnnlib_file)
+    elif file_args is not None and "vnnlib" in file_args:
+        vnnlib_args = parse_vnnlib_args(file_args["vnnlib"])
+    else:
+        vnnlib_args = None
+
+    return combine_args(SUPPORTED_ARGUMENTS, vars(cmd_args), file_args, vnnlib_args)
 
 
 if __name__ == "__main__":

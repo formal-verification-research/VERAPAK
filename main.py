@@ -75,7 +75,10 @@ def setup(config):
     config['domain'] = [dlb, dub]
     config['initial_region'] = snap.region_to_domain([config['initial_point'] - config['radius'],
                                                       config['initial_point'] + config['radius']], config['domain'])
-
+    #for i in range(0,config['initial_region'][0].size):
+    #    reg_idx = np.unravel_index(i, config['initial_region'][0].shape)
+    #    if (config['initial_region'][1][reg_idx] - config['initial_region'][0][reg_idx]) == 0.0:
+    #        print(str(reg_idx) + "\t\t:\t\t" + str(config['radius'][reg_idx]) + "\t\t:\t\t" + str(config['initial_point'][reg_idx]))
 
 def main(config):
     unknown_set = verapak_utils.RegionSet()
@@ -98,6 +101,8 @@ def main(config):
 
         num_valid_points_in_initial_region = get_amount_valid_points(
             config['initial_region'], config['granularity'], config['initial_point'])
+
+        assert num_valid_points_in_initial_region > 0, "No valid points in the initial region"
 
         num_valid_points_in_unsafe_set = 0
         num_valid_points_in_unknown_set = 0
@@ -254,7 +259,8 @@ def main(config):
     print('\n')
     print('Final Report')
     print('############################')
-    report_region_percentages(True)
+    if "report_region_percentages" in locals():
+        report_region_percentages(True)
 
     adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
     output_file = os.path.join(

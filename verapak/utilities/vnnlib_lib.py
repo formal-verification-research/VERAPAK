@@ -1,4 +1,4 @@
-import vnnlib_base
+from . import vnnlib_base
 
 import re
 import numpy as np
@@ -26,7 +26,7 @@ class VNNLib():
                                                  #| 1  0  0 -1  .|
                                                  #| 1  0  0  0  .| (Vertical order will not be... orderly?)
                                                  #\ .  .  .  .  ./
-            if mat.shape[0] != 1: # Valid MATs will always have one layer (each layer is 2D)
+            if len(mat.shape) != 2: # Valid MATs will always be 2D
                 return False
             
             maximal_idx = -1
@@ -55,7 +55,8 @@ class VNNLib():
             for i in range(mat.shape[1]):
                 if i == maximal_idx and compared[i]:
                     return False # Should not be comparing another variable with the maximal variable
-                elif not compared[i]:
+                elif i != maximal_idx and not compared[i]:
+                    print(str(maximal_idx) + "  " + str(i))
                     return False # Should compare all other variables
 
             self._maximal_class = maximal_idx # Only set it to something other than -1 *after* we have returned False in all bad cases
@@ -71,7 +72,7 @@ class VNNLib():
     def get_radii(self):
         if not hasattr(self, "_radii"):
             cp = self.get_centerpoint()
-            self._radii = np.subtract(self.inputs[1], cp)
+            self._radii = np.abs(np.subtract(self.inputs[1], cp))
         
         return self._radii
 
