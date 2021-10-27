@@ -75,10 +75,11 @@ def setup(config):
     config['domain'] = [dlb, dub]
     config['initial_region'] = snap.region_to_domain([config['initial_point'] - config['radius'],
                                                       config['initial_point'] + config['radius']], config['domain'])
-    #for i in range(0,config['initial_region'][0].size):
+    # for i in range(0,config['initial_region'][0].size):
     #    reg_idx = np.unravel_index(i, config['initial_region'][0].shape)
     #    if (config['initial_region'][1][reg_idx] - config['initial_region'][0][reg_idx]) == 0.0:
     #        print(str(reg_idx) + "\t\t:\t\t" + str(config['radius'][reg_idx]) + "\t\t:\t\t" + str(config['initial_point'][reg_idx]))
+
 
 def main(config):
     unknown_set = verapak_utils.RegionSet()
@@ -177,7 +178,7 @@ def main(config):
             report_first_adversarial_example()
             report_region_percentages()
 
-            region, adv_example = [unknown_set.pop_front(
+            region, adv_example = [unknown_set.pop_random(
             )[1], None] if unknown_set.size() > 0 else unsafe_set.get_nowait()
             region = [x.reshape(config['input_shape']).astype(
                 config['input_dtype']) for x in region]
@@ -248,7 +249,7 @@ def main(config):
                                     (potential_region, point))
                 if not found_adv_in_r:
                     num_valid_points_in_unknown_set += num_valid_points_in_r
-                    unknown_set.insert(r)
+                    unknown_set.insert(*r)
 
             elapsed_time = (time.time() - start_time) / 60.0
     except (KeyboardInterrupt, Exception) as e:

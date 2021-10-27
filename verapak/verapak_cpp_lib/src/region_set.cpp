@@ -69,11 +69,12 @@ RegionSet::get_and_remove_region_containing_point(numpy::ndarray const &p) {
 
 std::size_t RegionSet::size() { return region_set_internal.size(); }
 
-python::tuple RegionSet::pop_front() {
+python::tuple RegionSet::pop_random() {
   if (region_set_internal.empty()) {
     return python::make_tuple(false, python::object());
   }
-  auto iter = region_set_internal.begin();
+  auto iter = region_set_internal.begin(); 
+  std::advance(iter, rand() % region_set_internal.size());
   auto python_region = regionToPointPair(*iter);
   region_set_internal.erase(iter);
   return python::make_tuple(true, python_region);

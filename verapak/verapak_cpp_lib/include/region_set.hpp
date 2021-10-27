@@ -66,7 +66,7 @@ struct RegionSet {
   bool insert(numpy::ndarray const &, numpy::ndarray const &);
   std::size_t size();
   python::tuple get_and_remove_region_containing_point(numpy::ndarray const &);
-  python::tuple pop_front();
+  python::tuple pop_random();
 };
 
 struct PointSet {

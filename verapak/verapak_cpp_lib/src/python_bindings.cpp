@@ -11,7 +11,7 @@ BOOST_PYTHON_MODULE(verapak_utils) {
       .def("get_and_remove_region_containing_point",
            &RegionSet::get_and_remove_region_containing_point)
       .def("size", &RegionSet::size)
-      .def("pop_front", &RegionSet::pop_front);
+      .def("pop_random", &RegionSet::pop_random);
   python::class_<PointSet>("PointSet")
       .def("insert", &PointSet::insert)
       .def("elements", python::range(&PointSet::begin, &PointSet::end))
