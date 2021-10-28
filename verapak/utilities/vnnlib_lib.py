@@ -81,7 +81,9 @@ class VNNLib():
             raise ValueError("Cannot get the \"intended\" class of a non-maximal VNNLib")
         else:
             return self._maximal_class
-        
+
+    def get_domain(self):
+        return self.inputs
 
 
 def read_vnnlib_simple(filename):

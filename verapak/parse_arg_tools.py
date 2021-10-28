@@ -290,10 +290,13 @@ def parse_file_args(config_file):
 
 def parse_vnnlib_args(vnnlib_file):
     vnn = VNNLib(vnnlib_file)
+    domain = vnn.get_domain()
     return {
             "initial_point": vnn.get_centerpoint().tolist(),
             "label": vnn.get_intended_class(),
-            "radius": vnn.get_radii().tolist()
+            "radius": vnn.get_radii().tolist(),
+            "domain_lower_bound": domain[0],
+            "domain_upper_bound": domain[1]
     }
 
 
