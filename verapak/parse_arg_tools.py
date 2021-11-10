@@ -52,6 +52,12 @@ def numArrayType(string):
     l = string.split(',')
     return [float(x.strip()) for x in l]
 
+def xNumArrayType(string):
+    if "x" not in string:
+        return numArrayType(string)
+    else:
+        return [x.strip() for x in string.split(',')]
+
 
 SUPPORTED_ARGUMENTS = [
     {
@@ -117,7 +123,7 @@ SUPPORTED_ARGUMENTS = [
         'name': 'granularity',
         'arg_params':
             {
-                'type': numArrayType,
+                'type': xNumArrayType,
                 'help': 'Granularity (single value or per dimension array): a valid discretization of the input space (8 bit image -> 1/256)'
             }
     },
@@ -224,7 +230,7 @@ SUPPORTED_ARGUMENTS = [
         'name': 'timeout_minutes',
         'arg_params':
             {
-                'type': int,
+                'type': float,
                 'help': "Number of minutes to run the program before reporting all found adversarial examples and timing out (set to 0 for 'run until interrupted')",
                 'default': 5,
             }
@@ -236,6 +242,14 @@ SUPPORTED_ARGUMENTS = [
                 'type': int,
                 'help': "Number of seconds between status reports",
                 'default': 2,
+            }
+    },
+    {
+        'name': 'halt_on_first',
+        'arg_params':
+            {
+                'help': "If given, halt on the first adversarial example",
+                'action': 'store_true'
             }
     }]
 
@@ -332,7 +346,20 @@ def parse_args(args, prog):
     else:
         vnnlib_args = None
 
-    return combine_args(SUPPORTED_ARGUMENTS, vars(cmd_args), file_args, vnnlib_args)
+    args = combine_args(SUPPORTED_ARGUMENTS, vars(cmd_args), file_args, vnnlib_args)
+    
+    if type(args["granularity"][0]) == type(""):
+        for i in range(len(args["radius"])):
+            j = i
+            if len(args["granularity"]) == 1:
+                j = 1
+
+            if args["granularity"][j].endswith("x"):
+                args["granularity"][i] = float(args["granularity"][j][:-1]) * args["radius"][i]
+            else:
+                args["granularity"][i] = float(args["granularity"][j])
+
+    return args
 
 
 if __name__ == "__main__":

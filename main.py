@@ -133,8 +133,16 @@ def main(config):
             first_time_flag = True
             et = (time.time() - start_time)
             print(f'found first adversarial example in {et} seconds')
+            output_file = os.path.join(config['output_dir'], 'time_to_first.txt')
+            print(f'saving first adversarial example time to "{output_file}"...')
+            output_file = open(output_file, "w")
+            output_file.write(f"{et} seconds\n")
+            output_file.close()
             for adv_example in adversarial_examples.elements():
                 print(adv_example.shape)
+            if config['halt_on_first']:
+                halt_reason = "done"
+                raise KeyboardInterrupt()
 
         def partition_unsafe_region(region, adv_example):
             nonlocal num_valid_points_in_unsafe_set
@@ -252,7 +260,14 @@ def main(config):
                     unknown_set.insert(*r)
 
             elapsed_time = (time.time() - start_time) / 60.0
-    except (KeyboardInterrupt, Exception) as e:
+        if use_timeout and elapsed_time >= config['timeout_minutes']:
+            halt_reason = "timeout"
+        else:
+            halt_reason = "done"
+    except KeyboardInterrupt as e:
+        print(e)
+    except Exception as e:
+        halt_reason = "error"
         print(e)
     except:
         pass
@@ -268,6 +283,14 @@ def main(config):
         config['output_dir'], 'adversarial_examples.npy')
     print(f'saving adversarial examples to "{output_file}"...')
     np.save(output_file, adv_examples_numpy)
+    output_file = os.path.join(config['output_dir'], 'report.txt')
+    print(f'saving report to "{output_file}"...')
+    if "halt_reason" not in locals():
+        halt_reason = "halted"
+    et = time.time() - start_time
+    output_file = open(output_file, "w")
+    output_file.write(f"{halt_reason}\n{adversarial_examples.size()} adversarial examples in {et} seconds")
+    output_file.close()
     print('done')
 
 
