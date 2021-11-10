@@ -221,12 +221,12 @@ SUPPORTED_ARGUMENTS = [
             }
     },
     {
-        'name': 'timeout_minutes',
+        'name': 'timeout',
         'arg_params':
             {
-                'type': int,
+                'type': float,
                 'help': "Number of minutes to run the program before reporting all found adversarial examples and timing out (set to 0 for 'run until interrupted')",
-                'default': 5,
+                'default': 300.0,
             }
     },
     {
