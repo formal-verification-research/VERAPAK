@@ -225,7 +225,7 @@ SUPPORTED_ARGUMENTS = [
         'arg_params':
             {
                 'type': float,
-                'help': "Number of minutes to run the program before reporting all found adversarial examples and timing out (set to 0 for 'run until interrupted')",
+                'help': "Number of seconds to run the program before reporting all found adversarial examples and timing out (set to 0 for 'run until interrupted')",
                 'default': 300.0,
             }
     },
