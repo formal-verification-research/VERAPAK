@@ -119,8 +119,8 @@ def main(config):
             unknown_set.insert(*config['initial_region'])
             num_valid_points_in_unknown_set += num_valid_points_in_initial_region
 
-        elapsed_time = (time.time() - start_time) / 60.0
-        use_timeout = config['timeout_minutes'] != 0
+        elapsed_time = time.time() - start_time
+        use_timeout = config['timeout'] != 0
 
         first_time_flag = False
 
@@ -131,7 +131,7 @@ def main(config):
             if first_time_flag:
                 return
             first_time_flag = True
-            et = (time.time() - start_time)
+            et = time.time() - start_time
             print(f'found first adversarial example in {et} seconds')
             for adv_example in adversarial_examples.elements():
                 print(adv_example.shape)
@@ -174,7 +174,7 @@ def main(config):
                 print(f'currently processing: {percent_left_over}%')
             last_report_time = time.time()
 
-        while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout_minutes']):
+        while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout']):
             report_first_adversarial_example()
             report_region_percentages()
 
@@ -251,7 +251,7 @@ def main(config):
                     num_valid_points_in_unknown_set += num_valid_points_in_r
                     unknown_set.insert(*r)
 
-            elapsed_time = (time.time() - start_time) / 60.0
+            elapsed_time = time.time() - start_time
     except (KeyboardInterrupt, Exception) as e:
         print(e)
     except:
