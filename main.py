@@ -11,6 +11,8 @@ import verapak_utils
 from verapak import snap
 from verapak.verification.ve import *
 
+class DoneInterrupt(Exception):
+    pass
 
 def setup(config):
     graph_path = config["graph"]
@@ -142,7 +144,7 @@ def main(config):
                 print(adv_example.shape)
             if config['halt_on_first']:
                 halt_reason = "done"
-                raise KeyboardInterrupt()
+                raise DoneInterrupt()
 
         def partition_unsafe_region(region, adv_example):
             nonlocal num_valid_points_in_unsafe_set
@@ -265,12 +267,13 @@ def main(config):
         else:
             halt_reason = "done"
     except KeyboardInterrupt as e:
+        halt_reason = "halted"
         print(e)
-    except Exception as e:
+    except DoneInterrupt as e:
+        pass
+    except BaseException as e:
         halt_reason = "error"
         print(e)
-    except:
-        pass
 
     print('\n')
     print('Final Report')
@@ -285,8 +288,8 @@ def main(config):
     np.save(output_file, adv_examples_numpy)
     output_file = os.path.join(config['output_dir'], 'report.txt')
     print(f'saving report to "{output_file}"...')
-    if "halt_reason" not in locals():
-        halt_reason = "halted"
+    if halt_reason == "done":
+        halt_reason = "violated" if (adversarial_examples.size() > 0) else "holds"
     et = time.time() - start_time
     output_file = open(output_file, "w")
     output_file.write(f"{halt_reason}\n{adversarial_examples.size()} adversarial examples in {et} seconds")

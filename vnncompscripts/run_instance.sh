@@ -6,13 +6,14 @@ RESULTS_FILE=$5
 TIMEOUT=$6
 
 echo $TIMEOUT
+echo ${ONNX##*/}-${VNNLIB##*/}
 
-docker run --rm -it -v $PWD/vnncomptests:/src/vnncomptests -v $PWD/out:/src/out verapak:latest python main.py --config_file=vnncomptests/vnncomp.conf --output_dir=out --timeout=$TIMEOUT
+docker run --rm --user $(id -u):$(id -g) -v $PWD:/src/in -v $PWD/out:/src/out verapak:latest python main.py --config_file=/src/in/vnncomp.conf --output_dir=/src/out --timeout=$TIMEOUT --halt_on_first || exit 2
 
-mkdir out/$CATEGORY 2> /dev/null
-mv out/adversarial_example.npy	out/$CATEGORY/$ONNX-$VNNLIB.npy
-cp out/time_to_first.txt	out/$CATEGORY/$ONNX-$VNNLIB.time
-cp out/report.txt		out/$CATEGORY/$ONNX-$VNNLIB.report
-mv out/time_to_first.txt	$RESULTS_FILE.time
-mv out/report.txt		$RESULTS_FILE
+mkdir -p out/$CATEGORY
+mv out/adversarial_examples.npy	out/$CATEGORY/${ONNX##*/}-${VNNLIB##*/}.npy
+cp out/time_to_first.txt	out/$CATEGORY/${ONNX##*/}-${VNNLIB##*/}.time
+cp out/report.txt		out/$CATEGORY/${ONNX##*/}-${VNNLIB##*/}.report
+mv -f out/time_to_first.txt	$RESULTS_FILE.time
+mv -f out/report.txt		$RESULTS_FILE
 
