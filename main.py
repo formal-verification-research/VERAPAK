@@ -270,7 +270,7 @@ def main(config):
         halt_reason = "halted"
         print(e)
     except DoneInterrupt as e:
-        pass
+        halt_reason = "done"
     except BaseException as e:
         halt_reason = "error"
         print(e)
