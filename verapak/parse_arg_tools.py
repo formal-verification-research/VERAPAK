@@ -352,7 +352,7 @@ def parse_args(args, prog):
         for i in range(len(args["radius"])):
             j = i
             if len(args["granularity"]) == 1:
-                j = 1
+                j = 0
 
             if args["granularity"][j].endswith("x"):
                 args["granularity"][i] = float(args["granularity"][j][:-1]) * args["radius"][i]
