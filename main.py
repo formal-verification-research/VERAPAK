@@ -3,6 +3,7 @@ import os
 import time
 import queue
 import sys
+import traceback
 from verapak.model_tools import model_base
 from verapak.parse_arg_tools import parse_args
 from verapak.utilities.point_tools import *
@@ -273,7 +274,7 @@ def main(config):
         halt_reason = "done"
     except BaseException as e:
         halt_reason = "error"
-        print(e)
+        traceback.print_exception(type(e), e, e.__traceback__)
 
     print('\n')
     print('Final Report')
