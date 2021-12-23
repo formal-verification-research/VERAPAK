@@ -39,8 +39,11 @@ class ModFGSM(AbstractionEngine):
         max_radius = min_dimension_range / 1.25
 
         e1_lowerbound = 1
-        e1_upperbound = int(
+        e1_upperbound = math.ceil(
             max_radius / self.granularity[min_dimension_index])
+        print(max_radius)
+        print(self.granularity[min_dimension_index])
+        print(max_radius / self.granularity[min_dimension_index])
 
         sorted_dims = self.dimension_ranking_strategy.rank_indices_impl(region)
         unraveled_sorted_dims = [np.unravel_index(
