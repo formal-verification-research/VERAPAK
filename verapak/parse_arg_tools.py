@@ -349,15 +349,17 @@ def parse_args(args, prog):
     args = combine_args(SUPPORTED_ARGUMENTS, vars(cmd_args), file_args, vnnlib_args)
     
     if type(args["granularity"][0]) == type(""):
+        new_granularity = []
         for i in range(len(args["radius"])):
             j = i
             if len(args["granularity"]) == 1:
                 j = 0
 
-            if args["granularity"][j].endswith("x"):
-                args["granularity"][i] = float(args["granularity"][j][:-1]) * args["radius"][i]
+            if type(args["granularity"][j]) == type("") and args["granularity"][j].endswith("x"):
+                new_granularity.append(float(args["granularity"][j][:-1]) * args["radius"][i])
             else:
-                args["granularity"][i] = float(args["granularity"][j])
+                new_granularity.append(float(args["granularity"][j]))
+        args["granularity"] = new_granularity
 
     return args
 
