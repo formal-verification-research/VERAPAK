@@ -13,6 +13,10 @@ class ONNXModel(ModelBase):
         output_shape = get_onnx_output_shape(onnx_model)
         input_dtype = get_onnx_input_dtype(onnx_model)
         output_dtype = get_onnx_output_dtype(onnx_model)
+
+        if input_shape[0] == -1:
+            input_shape = [1] + input_shape[1:]
+
         super().__init__(prepare(onnx_model), input_shape,
                          output_shape, input_dtype, output_dtype)
         self.model_internal.tensor_dict = self.model_internal.tf_module.gen_tensor_dict(

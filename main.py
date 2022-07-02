@@ -7,6 +7,7 @@ import traceback
 from verapak.model_tools import model_base
 from verapak.parse_arg_tools import parse_args
 from verapak.utilities.point_tools import *
+from verapak.utilities.vnnlib_lib import NonMaximalVNNLibError
 import tensorflow as tf
 import verapak_utils
 from verapak import snap
@@ -90,6 +91,8 @@ def main(config):
     unsafe_set = queue.Queue()
     safe_set = verapak_utils.RegionSet()
 
+    start_time = time.time()
+
     try:
         setup(config)
 
@@ -141,8 +144,6 @@ def main(config):
             output_file = open(output_file, "w")
             output_file.write(f"{et} seconds\n")
             output_file.close()
-            for adv_example in adversarial_examples.elements():
-                print(adv_example.shape)
             if config['halt_on_first']:
                 halt_reason = "done"
                 raise DoneInterrupt()
@@ -184,6 +185,7 @@ def main(config):
             if percent_left_over > 0:
                 print(f'currently processing: {percent_left_over}%')
             last_report_time = time.time()
+            print()
 
         while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout']):
             report_first_adversarial_example()
@@ -282,22 +284,40 @@ def main(config):
     if "report_region_percentages" in locals():
         report_region_percentages(True)
 
-    adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
-    output_file = os.path.join(
-        config['output_dir'], 'adversarial_examples.npy')
-    print(f'saving adversarial examples to "{output_file}"...')
-    np.save(output_file, adv_examples_numpy)
-    output_file = os.path.join(config['output_dir'], 'report.txt')
-    print(f'saving report to "{output_file}"...')
-    if halt_reason == "done":
-        halt_reason = "violated" if (adversarial_examples.size() > 0) else "holds"
     et = time.time() - start_time
-    output_file = open(output_file, "w")
-    output_file.write(f"{halt_reason}\n{adversarial_examples.size()} adversarial examples in {et} seconds")
-    output_file.close()
+    write_results(config['output_dir'], adversarial_examples, halt_reason, et)
     print('done')
 
+def write_results(output_dir, adversarial_examples, halt_reason, et):
+    witness = ""
+    adv_count = 0
+    if adversarial_examples:
+        adv_count = adversarial_examples.size()
+        adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
+        if len(adv_examples_numpy) > 0:
+            witness = "("
+            for (idx), x in np.ndenumerate(adv_examples_numpy[0].flatten()):
+                witness += f"(X_{idx} {x}); " # Semicolons should become newlines for VNNCOMP, but CSV can't store literal newline characters.
+            # TODO: Add Y_{idx} {y}
+            witness += ")"
+        output_file = os.path.join(
+                output_dir, 'adversarial_examples.npy')
+        print(f'saving adversarial examples to "{output_file}"...')
+        np.save(output_file, adv_examples_numpy)
+
+    if halt_reason == "done":
+        halt_reason = "violated" if (adv_count > 0) else "holds"
+
+    output_file = os.path.join(output_dir, 'report.csv')
+    print(f'saving report to "{output_file}"...')
+    output_file = open(output_file, 'w')
+    output_file.write(f"{halt_reason},{witness},{adv_count},{et}\n")
+    output_file.close()
 
 if __name__ == "__main__":
     config = parse_args(sys.argv[1:], prog=sys.argv[0])
-    main(config)
+    if "error" in config:
+        print(f"\033[38;2;255;0;0mERROR: {config['error']}\033[0m")
+        write_results(config['output_dir'], None, "error_" + config["error"], 0)
+    else:
+        main(config)

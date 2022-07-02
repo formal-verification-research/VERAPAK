@@ -3,6 +3,9 @@ from . import vnnlib_base
 import re
 import numpy as np
 
+class NonMaximalVNNLibError(ValueError):
+    pass
+
 class VNNLib():
     def __init__(self, filename):
         vnn_data = read_vnnlib_simple(filename)
@@ -78,7 +81,7 @@ class VNNLib():
 
     def get_intended_class(self):
         if not self.is_maximal():
-            raise ValueError("Cannot get the \"intended\" class of a non-maximal VNNLib")
+            raise NonMaximalVNNLibError("Cannot get the \"intended\" class of a non-maximal VNNLib")
         else:
             return self._maximal_class
 

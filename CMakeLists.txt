@@ -1,3 +1,6 @@
+project(VERAPAK)
+cmake_minimum_required(VERSION 3.10.2)
+
 include_directories(${CMAKE_SOURCE_DIR}/verapak/verapak_cpp_lib/include)
 include_directories(/usr/include/python3.6)
 include_directories(/boost_1_77_0)

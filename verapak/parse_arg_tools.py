@@ -3,7 +3,7 @@ import sys
 import os
 from . import strategy_registry
 import pathlib
-from .utilities.vnnlib_lib import VNNLib
+from .utilities.vnnlib_lib import VNNLib, NonMaximalVNNLibError
 import numpy as np
 
 
@@ -328,26 +328,47 @@ def combine_args(supported_args, *arg_sets):
             if key in this_dict:
                 if value is None or ('default' in supported_arg and value == supported_arg['default']):
                     base_dict[key] = this_dict[key]
+        if "error" in this_dict:
+            if "error" not in base_dict:
+                base_dict["error"] = str(this_dict["error"])
+            else:
+                base_dict["error"] += "+" + str(this_dict["error"])
     return base_dict
 
 
 def parse_args(args, prog):
-    cmd_args = parse_cmdline_args(args, prog)
+    try:
+        cmd_args = parse_cmdline_args(args, prog)
+    except ValueError as e:
+        print(e.message)
+        setattr(cmd_args, "error", "bad_cmd_args")
 
     if hasattr(cmd_args, "config_file"):
-        file_args = parse_file_args(cmd_args.config_file)
+        try:
+            file_args = parse_file_args(cmd_args.config_file)
+        except ValueError as e:
+            print(e.message)
+            file_args = {"error": "bad_config_args"}
     else:
         file_args = None
 
-    if hasattr(cmd_args, "vnnlib_file"):
-        vnnlib_args = parse_vnnlib_args(cmd_args.vnnlib_file)
-    elif file_args is not None and "vnnlib" in file_args:
-        vnnlib_args = parse_vnnlib_args(file_args["vnnlib"])
-    else:
-        vnnlib_args = None
+    try:
+        if hasattr(cmd_args, "vnnlib_file"):
+            vnnlib_args = parse_vnnlib_args(cmd_args.vnnlib_file)
+        elif file_args is not None and "vnnlib" in file_args:
+            vnnlib_args = parse_vnnlib_args(file_args["vnnlib"])
+        else:
+            vnnlib_args = None
+    except NonMaximalVNNLibError as e:
+        vnnlib_args = {"error": "nonmaximal"}
+    except:
+        vnnlib_args = {"error": "bad_vnnlib_args"}
 
     args = combine_args(SUPPORTED_ARGUMENTS, vars(cmd_args), file_args, vnnlib_args)
     
+    if "error" in args:
+        return args
+
     if type(args["granularity"][0]) == type(""):
         new_granularity = []
         for i in range(len(args["radius"])):
