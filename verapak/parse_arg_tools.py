@@ -340,14 +340,14 @@ def parse_args(args, prog):
     try:
         cmd_args = parse_cmdline_args(args, prog)
     except ValueError as e:
-        print(e.message)
+        print(e.args)
         setattr(cmd_args, "error", "bad_cmd_args")
 
     if hasattr(cmd_args, "config_file"):
         try:
             file_args = parse_file_args(cmd_args.config_file)
         except ValueError as e:
-            print(e.message)
+            print(e.args)
             file_args = {"error": "bad_config_args"}
     else:
         file_args = None

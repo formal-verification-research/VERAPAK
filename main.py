@@ -296,8 +296,8 @@ def write_results(output_dir, adversarial_examples, halt_reason, et):
         adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
         if len(adv_examples_numpy) > 0:
             witness = "("
-            for (idx), x in np.ndenumerate(adv_examples_numpy[0].flatten()):
-                witness += f"(X_{idx} {x}); " # Semicolons should become newlines for VNNCOMP, but CSV can't store literal newline characters.
+            for idx, x in np.ndenumerate(adv_examples_numpy[0].flatten()):
+                witness += f"(X_{idx[0]} {x}); " # Semicolons should become newlines for VNNCOMP, but CSV can't store literal newline characters.
             # TODO: Add Y_{idx} {y}
             witness += ")"
         output_file = os.path.join(

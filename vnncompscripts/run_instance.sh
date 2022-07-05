@@ -40,6 +40,9 @@ else
 	echo ""
 fi
 
+#echo -n -e "\033[38;2;0;0;128m"
+#echo -n "OUT: $REPORT_OUT"
+#echo -e "\033[0m"
 echo $REPORT_OUT > $RESULTS_FILE
 
 echo -n -e "\033[38;2;0;128;0m---\033[0m"
