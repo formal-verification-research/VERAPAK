@@ -39,7 +39,7 @@ def setup(config):
             config["graph"].evaluate(config["initial_point"]).flatten())
 
     config['label'] = tf.keras.utils.to_categorical(
-        config['label'], num_classes=np.prod(config['output_shape']), dtype=config['output_dtype'])
+        config['label'], num_classes=np.abs(np.prod(config['output_shape'])), dtype=config['output_dtype'])
 
     if len(config["radius"]) == 1:
         config["radius"] = np.full_like(
