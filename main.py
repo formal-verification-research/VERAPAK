@@ -285,28 +285,41 @@ def main(config):
         report_region_percentages(True)
 
     et = time.time() - start_time
-    write_results(config['output_dir'], adversarial_examples, halt_reason, et)
+    first_adversarial = next(adversarial_examples.elements())
+    if adversarial_examples.size() > 0:
+        witness_data = [
+            first_adversarial.flatten(),
+            config['graph'].evaluate(first_adversarial).flatten()
+        ]
+    else:
+        witness_data = None
+    write_results(config['output_dir'], adversarial_examples, halt_reason, et, witness_data)
     print('done')
 
-def write_results(output_dir, adversarial_examples, halt_reason, et):
+def create_witness(input_values, output_values):
+    witness = "("
+    for idx, x in np.ndenumerate(input_values):
+        witness += f"(X_{idx[0]} {x}); " # Semicolons should become newlines for VNNCOMP, but CSV can't store literal newline characters.
+    for idx, y in np.ndenumerate(output_values):
+        witness += f"(Y_{idx[0]} {y}); " # Semicolons should become newlines for VNNCOMP, but CSV can't store literal newline characters.
+    witness += ")"
+    return witness
+
+def write_results(output_dir, adversarial_examples, halt_reason, et, witness_data):
     witness = ""
     adv_count = 0
+    if witness_data:
+        witness = create_witness(witness_data[0], witness_data[1])
     if adversarial_examples:
         adv_count = adversarial_examples.size()
         adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
-        if len(adv_examples_numpy) > 0:
-            witness = "("
-            for idx, x in np.ndenumerate(adv_examples_numpy[0].flatten()):
-                witness += f"(X_{idx[0]} {x}); " # Semicolons should become newlines for VNNCOMP, but CSV can't store literal newline characters.
-            # TODO: Add Y_{idx} {y}
-            witness += ")"
         output_file = os.path.join(
                 output_dir, 'adversarial_examples.npy')
         print(f'saving adversarial examples to "{output_file}"...')
         np.save(output_file, adv_examples_numpy)
 
     if halt_reason == "done":
-        halt_reason = "violated" if (adv_count > 0) else "holds"
+        halt_reason = "sat" if (adv_count > 0) else "unsat"
 
     output_file = os.path.join(output_dir, 'report.csv')
     print(f'saving report to "{output_file}"...')
