@@ -285,8 +285,8 @@ def main(config):
         report_region_percentages(True)
 
     et = time.time() - start_time
-    first_adversarial = next(adversarial_examples.elements())
     if adversarial_examples.size() > 0:
+        first_adversarial = next(adversarial_examples.elements())
         witness_data = [
             first_adversarial.flatten(),
             config['graph'].evaluate(first_adversarial).flatten()
