@@ -17,9 +17,12 @@ class DiscreteSearch(VerificationEngine):
     def verification_impl(self, region, safety_predicate):
         if not self.should_attempt_checker(region):
             return UNKNOWN, None
-        points = self.discrete_point_generator(
-            region, self.granularity, self.valid_point)
-        for point in points:
-            if not safety_predicate(point):
-                return UNSAFE, point
-        return SAFE, None
+        try:
+            points = self.discrete_point_generator(
+                region, self.granularity, self.valid_point)
+            for point in points:
+                if not safety_predicate(point):
+                    return UNSAFE, point
+            return SAFE, None
+        except RecursionError: # Tried to process something too big
+            return UNKNOWN, None
