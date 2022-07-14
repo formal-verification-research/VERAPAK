@@ -28,7 +28,8 @@ def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divis
             for d in range(divisor):
                 r0 = r[0].copy()
                 r1 = r[1].copy()
-                r1[curIndex] = r0[curIndex] + (sizeIncrement * (d + 1))
+                r0[curIndex] = r0[curIndex] + (sizeIncrement * d)
+                r1[curIndex] = r0[curIndex] + sizeIncrement
                 newRetVal.append([r0, r1])
         retVal = newRetVal
 #        if sizeIncrement <= 0:

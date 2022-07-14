@@ -205,6 +205,7 @@ def main(config):
                 num_valid_points_in_unsafe_set -= num_valid_points
 
             if num_valid_points <= 0:
+                elapsed_time = time.time() - start_time
                 continue
 
             if not adv_example is None:
@@ -212,6 +213,7 @@ def main(config):
                     partition_unsafe_region(region, adv_example)
                 elif num_valid_points == 1:
                     num_valid_points_in_unsafe_set += 1
+                elapsed_time = time.time() - start_time
                 continue
 
             verif_result, adv_example = config['verification_strategy'].verification_impl(
@@ -220,50 +222,47 @@ def main(config):
             if verif_result == SAFE:
                 num_valid_points_in_safe_set += num_valid_points
                 safe_set.insert(*region)
-                continue
             elif verif_result == UNSAFE:
                 adversarial_examples.insert(adv_example)
                 if num_valid_points > 1:
                     partition_unsafe_region(region, adv_example)
-                continue
-
-            partition = config['partitioning_strategy'].partition_impl(region)
-            for r in partition:
-                abstraction = config['abstraction_strategy'].abstraction_impl(
-                    r, config['num_abstractions'])
-                snapped_abstraction = [
-                    snap_point_to_domain_and_valid(x) for x in abstraction]
-                found_adv_in_r = False
-                num_valid_points_in_r = get_amount_valid_points(
-                    r, config['granularity'], config['initial_point'])
-                abstraction_evaluated = [(p, safety_predicate(p))
-                                         for p in snapped_abstraction]
-                for point, safe in abstraction_evaluated:
-                    if not safe:
-                        adversarial_examples.insert(point)
-                for point, safe in abstraction_evaluated:
-                    if not safe:
-                        if point_in_region(r, point):
-                            num_valid_points_in_unsafe_set += num_valid_points_in_r
-                            unsafe_set.put_nowait((r, point))
-                            found_adv_in_r = True
-                            break
-                        else:  # attempt to find the potential adversarial example in unknown region set
-                            find_success, potential_region = unknown_set.get_and_remove_region_containing_point(
-                                point)
-                            if find_success:
-                                potential_region = [x.reshape(config['input_shape']).astype(
-                                    config['input_dtype']) for x in potential_region]
-                                num_valid_points_in_pr = get_amount_valid_points(
-                                    potential_region, config['granularity'], config['initial_point'])
-                                num_valid_points_in_unsafe_set += num_valid_points_in_pr
-                                num_valid_points_in_unknown_set -= num_valid_points_in_pr
-                                unsafe_set.put_nowait(
-                                    (potential_region, point))
-                if not found_adv_in_r:
-                    num_valid_points_in_unknown_set += num_valid_points_in_r
-                    unknown_set.insert(*r)
-
+            else:
+                partition = config['partitioning_strategy'].partition_impl(region)
+                for r in partition:
+                    abstraction = config['abstraction_strategy'].abstraction_impl(
+                        r, config['num_abstractions'])
+                    snapped_abstraction = [
+                        snap_point_to_domain_and_valid(x) for x in abstraction]
+                    found_adv_in_r = False
+                    num_valid_points_in_r = get_amount_valid_points(
+                        r, config['granularity'], config['initial_point'])
+                    abstraction_evaluated = [(p, safety_predicate(p))
+                                             for p in snapped_abstraction]
+                    for point, safe in abstraction_evaluated:
+                        if not safe:
+                            adversarial_examples.insert(point)
+                    for point, safe in abstraction_evaluated:
+                        if not safe:
+                            if point_in_region(r, point):
+                                num_valid_points_in_unsafe_set += num_valid_points_in_r
+                                unsafe_set.put_nowait((r, point))
+                                found_adv_in_r = True
+                                break
+                            else:  # attempt to find the potential adversarial example in unknown region set
+                                find_success, potential_region = unknown_set.get_and_remove_region_containing_point(
+                                    point)
+                                if find_success:
+                                    potential_region = [x.reshape(config['input_shape']).astype(
+                                        config['input_dtype']) for x in potential_region]
+                                    num_valid_points_in_pr = get_amount_valid_points(
+                                        potential_region, config['granularity'], config['initial_point'])
+                                    num_valid_points_in_unsafe_set += num_valid_points_in_pr
+                                    num_valid_points_in_unknown_set -= num_valid_points_in_pr
+                                    unsafe_set.put_nowait(
+                                        (potential_region, point))
+                    if not found_adv_in_r:
+                        num_valid_points_in_unknown_set += num_valid_points_in_r
+                        unknown_set.insert(r[0], r[1])
             elapsed_time = time.time() - start_time
         if use_timeout and elapsed_time >= config['timeout']:
             halt_reason = "timeout"
@@ -331,6 +330,6 @@ if __name__ == "__main__":
     config = parse_args(sys.argv[1:], prog=sys.argv[0])
     if "error" in config:
         print(f"\033[38;2;255;0;0mERROR: {config['error']}\033[0m")
-        write_results(config['output_dir'], None, "error_" + config["error"], 0)
+        write_results(config['output_dir'], None, "error_" + config["error"], 0, None)
     else:
         main(config)
