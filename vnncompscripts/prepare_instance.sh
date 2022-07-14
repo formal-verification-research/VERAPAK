@@ -25,7 +25,7 @@ case "$CATEGORY" in
 #	oval21				) GRANULARITY="";; # See 2021 (uses default)
 #	rl_benchmarks			) GRANULARITY="";; # Uses default
 	sri_resnet_a			) GRANULARITY="$RGB_PRECISION";;
-	sri_resnet_b			) GARNULARITY="$RGB_PRECISION";;
+	sri_resnet_b			) GRANULARITY="$RGB_PRECISION";;
 
 	# DEFAULT
 	*				) GRANULARITY="0.001x";; # 1/1000th of each dimension's size
