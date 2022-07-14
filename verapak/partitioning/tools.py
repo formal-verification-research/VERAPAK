@@ -18,14 +18,22 @@ def enumerateAllRegions(partition, region, dim_index, sorted_indices, original_r
 
 def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divisor):
     sorted_indices = dim_select_strategy(region)
-    retVal = []
-    firstRegion = [region[0].copy(), region[1].copy()]
+    retVal = [[region[0].copy(), region[1].copy()]]
+#    firstRegion = [region[0].copy(), region[1].copy()]
     for i in range(num_dims):
         curIndex = np.unravel_index(sorted_indices[i], region[0].shape)
         sizeIncrement = (region[1][curIndex] - region[0][curIndex]) / divisor
-        if sizeIncrement <= 0:
-            return []
-        firstRegion[1][curIndex] = firstRegion[0][curIndex] + sizeIncrement
-    enumerateAllRegions(retVal, firstRegion, 0,
-                        sorted_indices, region, num_dims)
+        newRetVal = []
+        for r in retVal:
+            for d in range(divisor):
+                r0 = r[0].copy()
+                r1 = r[1].copy()
+                r1[curIndex] = r0[curIndex] + (sizeIncrement * (d + 1))
+                newRetVal.append([r0, r1])
+        retVal = newRetVal
+#        if sizeIncrement <= 0:
+#            return []
+#        firstRegion[1][curIndex] = firstRegion[0][curIndex] + sizeIncrement
+#    enumerateAllRegions(retVal, firstRegion, 0,
+#                        sorted_indices, region, num_dims)
     return retVal
