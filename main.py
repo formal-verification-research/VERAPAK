@@ -24,13 +24,6 @@ def setup(config):
     config["output_shape"] = config["graph"].output_shape
     config["output_dtype"] = config["graph"].output_dtype
 
-    if len(config["granularity"]) == 1:
-        config['granularity'] = np.full(
-            config['input_shape'], config['granularity'][0]).astype(config['input_dtype'])
-    else:
-        config['granularity'] = np.array(
-            config['granularity'], dtype=config['input_dtype']).reshape(config['input_shape'])
-
     config["initial_point"] = np.array(
         config["initial_point"], dtype=config["input_dtype"]).reshape(config["input_shape"])
 
@@ -104,26 +97,24 @@ def main(config):
             return classification == label_classification
 
         def snap_point_to_domain_and_valid(point):
-            return snap.point_to_domain(snap.to_nearest_valid_point(point, config['initial_point'], config['granularity']), config['domain'])
+            return snap.point_to_domain(point, config['domain'])
+        
+        initial_area = get_size(config['initial_region'])
+        assert initial_area > 0, "Input region is empty"
 
-        num_valid_points_in_initial_region = get_amount_valid_points(
-            config['initial_region'], config['granularity'], config['initial_point'])
-
-        assert num_valid_points_in_initial_region > 0, "No valid points in the initial region"
-
-        num_valid_points_in_unsafe_set = 0
-        num_valid_points_in_unknown_set = 0
-        num_valid_points_in_safe_set = 0
+        unsafe_area = 0
+        unknown_area = 0
+        safe_area = 0
 
         start_time = time.time()
 
         if not safety_predicate(config['initial_point']):
             adversarial_examples.insert(config['initial_point'])
             unsafe_set.put((config['initial_region'], config['initial_point']))
-            num_valid_points_in_unsafe_set += num_valid_points_in_initial_region
+            unsafe_area = initial_area
         else:
             unknown_set.insert(*config['initial_region'])
-            num_valid_points_in_unknown_set += num_valid_points_in_initial_region
+            unknown_area = initial_area
 
         elapsed_time = time.time() - start_time
         use_timeout = config['timeout'] != 0
@@ -149,19 +140,17 @@ def main(config):
                 raise DoneInterrupt()
 
         def partition_unsafe_region(region, adv_example):
-            nonlocal num_valid_points_in_unsafe_set
-            nonlocal num_valid_points_in_unknown_set
+            nonlocal unsafe_area
+            nonlocal unknown_area
             partition = config['partitioning_strategy'].partition_impl(
                 region)
             for r in partition:
-                num_valid_points_in_r = get_amount_valid_points(
-                    r, config['granularity'], config['initial_point'])
                 if point_in_region(r, adv_example):
                     unsafe_set.put_nowait((r, adv_example))
-                    num_valid_points_in_unsafe_set += num_valid_points_in_r
+                    unsafe_area += get_size(r)
                 else:
                     unknown_set.insert(*r)
-                    num_valid_points_in_unknown_set += num_valid_points_in_r
+                    unknown_area += get_size(r)
 
         last_report_time = time.time()
 
@@ -170,12 +159,9 @@ def main(config):
             et = time.time() - last_report_time
             if et < config['report_interval_seconds'] and not bypass:
                 return
-            percent_unsafe = num_valid_points_in_unsafe_set / \
-                num_valid_points_in_initial_region * 100
-            percent_safe = num_valid_points_in_safe_set / \
-                num_valid_points_in_initial_region * 100
-            percent_unknown = num_valid_points_in_unknown_set / \
-                num_valid_points_in_initial_region * 100
+            percent_unsafe = unsafe_area / initial_area * 100
+            percent_safe = safe_area / initial_area * 100
+            percent_unknown = unknown_area / initial_area * 100
             print(f'percent unknown: {percent_unknown}%')
             print(f'percent found unsafe: {percent_unsafe}%')
             print(f'percent found safe: {percent_safe}%')
@@ -188,6 +174,7 @@ def main(config):
             print()
 
         while (unknown_set.size() > 0 or not unsafe_set.empty()) and (not use_timeout or elapsed_time < config['timeout']):
+            print("Loop")
             report_first_adversarial_example()
             report_region_percentages()
 
@@ -196,23 +183,19 @@ def main(config):
             region = [x.reshape(config['input_shape']).astype(
                 config['input_dtype']) for x in region]
 
-            num_valid_points = get_amount_valid_points(
-                region, config['granularity'], config['initial_point'])
+            region_area = get_size(region)
 
             if adv_example is None:
-                num_valid_points_in_unknown_set -= num_valid_points
+                unknown_area -= region_area
             else:
-                num_valid_points_in_unsafe_set -= num_valid_points
+                unsafe_area -= region_area
 
-            if num_valid_points <= 0:
+            if region_area <= 0:
                 elapsed_time = time.time() - start_time
                 continue
 
             if not adv_example is None:
-                if num_valid_points > 1:
-                    partition_unsafe_region(region, adv_example)
-                elif num_valid_points == 1:
-                    num_valid_points_in_unsafe_set += 1
+                partition_unsafe_region(region, adv_example)
                 elapsed_time = time.time() - start_time
                 continue
 
@@ -220,12 +203,11 @@ def main(config):
                 region, safety_predicate)
 
             if verif_result == SAFE:
-                num_valid_points_in_safe_set += num_valid_points
+                safe_area += region_area
                 safe_set.insert(*region)
             elif verif_result == UNSAFE:
                 adversarial_examples.insert(adv_example)
-                if num_valid_points > 1:
-                    partition_unsafe_region(region, adv_example)
+                partition_unsafe_region(region, adv_example)
             else:
                 partition = config['partitioning_strategy'].partition_impl(region)
                 for r in partition:
@@ -234,8 +216,7 @@ def main(config):
                     snapped_abstraction = [
                         snap_point_to_domain_and_valid(x) for x in abstraction]
                     found_adv_in_r = False
-                    num_valid_points_in_r = get_amount_valid_points(
-                        r, config['granularity'], config['initial_point'])
+                    r_area = get_size(r)
                     abstraction_evaluated = [(p, safety_predicate(p))
                                              for p in snapped_abstraction]
                     for point, safe in abstraction_evaluated:
@@ -244,7 +225,7 @@ def main(config):
                     for point, safe in abstraction_evaluated:
                         if not safe:
                             if point_in_region(r, point):
-                                num_valid_points_in_unsafe_set += num_valid_points_in_r
+                                unsafe_area += r_area
                                 unsafe_set.put_nowait((r, point))
                                 found_adv_in_r = True
                                 break
@@ -254,14 +235,13 @@ def main(config):
                                 if find_success:
                                     potential_region = [x.reshape(config['input_shape']).astype(
                                         config['input_dtype']) for x in potential_region]
-                                    num_valid_points_in_pr = get_amount_valid_points(
-                                        potential_region, config['granularity'], config['initial_point'])
-                                    num_valid_points_in_unsafe_set += num_valid_points_in_pr
-                                    num_valid_points_in_unknown_set -= num_valid_points_in_pr
+                                    pr_area = get_size(potential_region)
+                                    unsafe_area += pr_area
+                                    unknown_area -= pr_area
                                     unsafe_set.put_nowait(
                                         (potential_region, point))
                     if not found_adv_in_r:
-                        num_valid_points_in_unknown_set += num_valid_points_in_r
+                        unknown_area += r_area
                         unknown_set.insert(r[0], r[1])
             elapsed_time = time.time() - start_time
         if use_timeout and elapsed_time >= config['timeout']:
@@ -294,6 +274,9 @@ def main(config):
         witness_data = None
     write_results(config['output_dir'], adversarial_examples, halt_reason, et, witness_data)
     print('done')
+
+def get_size(region):
+    return abs(np.prod(region[1] - region[0]))
 
 def create_witness(input_values, output_values):
     witness = "("

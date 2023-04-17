@@ -3,9 +3,6 @@ import numpy as np
 
 
 class RandomPoint(AbstractionEngine):
-    def __init__(self, **kwargs):
-        pass
-
     # num_abstractions = number of split points
     def abstraction_impl(self, region, num_abstractions):
         retVal = []

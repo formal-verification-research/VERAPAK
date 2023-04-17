@@ -4,14 +4,33 @@ from ..dimension_ranking.largest_first import LargestFirstDimSelection
 
 
 class LargestFirstPartitioningStrategy(PartitioningEngine):
-    def __init__(self, partitioning_divisor, partitioning_num_dimensions, **kwargs):
+    @staticmethod
+    def get_config_parameters():
+        return [{
+            "name": "partitioning_divisor",
+            "arg_params": {
+                "type": int,
+                "help": "Number of divisions on each dimension during partitioning",
+                "default": 2
+            }
+        },
+        {
+            "name": "partitioning_dimensions",
+            "arg_params": {
+                "type": int,
+                "help": "Number of dimensions to partition",
+                "default": 3
+            }
+        }]
+
+    def __init__(self):
         self.dim_selection_strat = LargestFirstDimSelection()
-        self.divisor = partitioning_divisor
-        self.num_dimensions = partitioning_num_dimensions
 
     def partition_impl(self, region):
         return hierarchicalDimensionRefinement(region, self.dim_selection_strat.rank_indices_impl, self.num_dimensions, self.divisor)
+    
+    def set_config(self, config, data):
+        self.divisor = config["partitioning_divisor"]
+        self.num_dimensions = min(config["partitioning_dimensions"], data["initial_point"].size)
+        self.dim_selection_strat.set_config(config, data)
 
-
-def IMPL():
-    return LargestFirstPartitioningStrategy(None, None)

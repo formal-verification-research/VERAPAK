@@ -4,8 +4,7 @@ import numpy as np
 
 
 class GradientBasedDimSelection(DimensionRankingEngine):
-    def __init__(self, gradient_function, **kwargs):
-        self.gradient_func = gradient_function
+    def __init__(self):
         self.center_point_abstraction = cp_abstract.CenterPoint()
 
     def rank_indices_impl(self, region):
@@ -19,3 +18,7 @@ class GradientBasedDimSelection(DimensionRankingEngine):
         retVal = list(np.argsort(abs_grad.flatten()))
         retVal.reverse()
         return retVal
+
+    def set_config(self, config, data):
+        self.gradient_func = data["gradient_function"]
+

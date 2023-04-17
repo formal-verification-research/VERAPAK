@@ -37,6 +37,6 @@ mkdir -p out
 echo "graph :: /src/in/$ONNX" > vnncomp.conf
 echo "vnnlib :: /src/in/$VNNLIB" >> vnncomp.conf
 echo "abstraction_strategy :: rfgsm" >> vnncomp.conf
-echo "verification_strategy :: discrete_search" >> vnncomp.conf
-echo "granularity :: $GRANULARITY" >> vnncomp.conf
+echo "verification_strategy :: eran" >> vnncomp.conf
+#echo "granularity :: $GRANULARITY" >> vnncomp.conf
 

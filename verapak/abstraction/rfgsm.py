@@ -4,13 +4,17 @@ from ..dimension_ranking.gradient_based import GradientBasedDimSelection
 
 
 class RFGSM(ModFGSM):
-    def __init__(self, gradient_function, granularity, balance_factor, **kwargs):
+    @staticmethod
+    def get_config_parameters():
+        parent = ModFGSM.get_config_parameters()
+        non_strat = list(filter(lambda item: item["name"] != "dimension_ranking_strategy", parent))
+        strat = next(filter(lambda item: item["name"] == "dimension_ranking_strategy", parent))
+        strat["arg_params"]["default"] = GradientBasedDimSelection
+        return [*non_strat, strat]
+
+    def __init__(self):
         def fallback_predicate(region):
             min_val, min_idx = _min_dim(region)
             return min_val < (2 * granularity[min_idx])
+        super().__init__(fallback_strategy=RandomPoint(), fallback_predicate=fallback_predicate)
 
-        dim_strat = GradientBasedDimSelection(
-            gradient_function)
-        super().__init__(gradient_function=gradient_function, granularity=granularity,
-                         balance_factor=balance_factor, fallback_strategy=RandomPoint(),
-                         fallback_predicate=fallback_predicate, dimension_ranking_strategy=dim_strat)

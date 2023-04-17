@@ -4,6 +4,7 @@ import numpy as np
 from ..dimension_ranking.by_index import ByIndex
 import math
 from ..snap import point_to_domain
+from ..parse_arg_types import xNumArrayType, strategyType, get_strategy_choices
 
 
 def _min_dim(region):
@@ -13,14 +14,37 @@ def _min_dim(region):
 
 
 class ModFGSM(AbstractionEngine):
+    @staticmethod
+    def get_config_parameters():
+        return [{
+            "name": "balance_factor",
+            "arg_params": {
+                "type": float,
+                "help": "RFGSM balance factor (1.0 -> all FGSM, 0.0 -> pure random)",
+                "default": 0.95
+            }
+        },
+        {
+            "name": "granularity",
+            "arg_params": {
+                "type": xNumArrayType,
+                "help": "Granularity (single value or per dimension array): a valid discretization of the input space (8 bit image -> 1/255)"
+            }
+        },
+        {
+            'name': 'dimension_ranking_strategy',
+            'arg_params':
+                {
+                    'type': strategyType('dimension_ranking'),
+                    'help': "RFGSM dimension ranking strategy: (oneof {})".format(get_strategy_choices('dimension_ranking')),
+                    'default': ByIndex
+                }
+        }]
 
-    def __init__(self, gradient_function, granularity, fallback_strategy=None, fallback_predicate=lambda region: False, balance_factor=1, dimension_ranking_strategy=ByIndex(), **kwargs):
+
+    def __init__(self, fallback_strategy=None, fallback_predicate=lambda region: False):
         self.fallback_strategy = fallback_strategy
         self.fallback_predicate = fallback_predicate
-        self.balance_factor = balance_factor
-        self.gradient_function = gradient_function
-        self.granularity = granularity
-        self.dimension_ranking_strategy = dimension_ranking_strategy
 
     def abstraction_impl(self, region, num_abstractions):
         # Should fallback?
@@ -69,3 +93,20 @@ class ModFGSM(AbstractionEngine):
             retVal.append(generated_point)
 
         return retVal
+
+    def set_config(self, config, data):
+        self.balance_factor = config["balance_factor"]
+        self.gradient_function = data["gradient_function"]
+        self.granularity = config["granularity"]
+
+        self.dimension_ranking_strategy = config["dimension_ranking_strategy"]()
+        self.dimension_ranking_strategy.set_config(config, data)
+
+        if self.fallback_strategy is not None:
+            self.fallback_strategy.set_config(config, data)
+
+    def shutdown(self):
+        self.dimension_ranking_strategy.shutdown()
+        if self.fallback_strategy is not None:
+            self.fallback_strategy.shutdown()
+

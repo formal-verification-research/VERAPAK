@@ -2,61 +2,9 @@ import argparse  # https://docs.python.org/3/library/argparse.htm
 import sys
 import os
 from . import strategy_registry
-import pathlib
 from .utilities.vnnlib_lib import VNNLib, NonMaximalVNNLibError
+from .parse_arg_types import *
 import numpy as np
-
-
-def get_strategy_choices(category):
-    if category in strategy_registry.ALL_STRATEGIES:
-        return list(strategy_registry.ALL_STRATEGIES[category].keys())
-    raise ValueError("unsupported strategy category: {}".format(category))
-
-
-def strategyType(category):
-    def typeConverter(strategy):
-        options = get_strategy_choices(category)
-        if strategy in options:
-            return strategy_registry.ALL_STRATEGIES[category][strategy]
-        raise ValueError(f"unsupported {category} strategy: {strategy}")
-    return typeConverter
-
-
-def directoryType(dirPath):
-    if os.path.isdir(dirPath):
-        return dirPath
-    raise ValueError(f"{dirPath} is not a directory")
-
-
-def fileType(filePath):
-    if os.path.isfile(filePath):
-        return filePath
-    raise ValueError(f"{filePath} is not a file")
-
-
-def graphPathType(filePath):
-    filePath = fileType(filePath)
-    if pathlib.Path(filePath).suffix.upper() == '.ONNX':
-        return filePath
-    raise ValueError(f"{filePath} unsupported model type")
-
-def vnnPathType(filePath):
-    filePath = fileType(filePath)
-    if pathlib.Path(filePath).suffix.upper() == '.VNNLIB':
-        return filePath
-    raise ValueError(f"{filePath} unsupported vnnlib file")
-
-
-def numArrayType(string):
-    string = string
-    l = string.split(',')
-    return [float(x.strip()) for x in l]
-
-def xNumArrayType(string):
-    if "x" not in string:
-        return numArrayType(string)
-    else:
-        return [x.strip() for x in string.split(',')]
 
 
 SUPPORTED_ARGUMENTS = [
@@ -65,7 +13,7 @@ SUPPORTED_ARGUMENTS = [
         'arg_params':
             {
                 'type': fileType,
-                'help': 'Configuration file: key value pairs (one per line) in this format KEY :: VALUE. Keys are the same as command line argument names in this help and values follow the same format.',
+                'help': 'Configuration file: key value pairs (one per line) in the format KEY :: VALUE. Keys are the same as command line argument names in this help and values follow the same format.',
                 'default': None
             }
     },
@@ -120,14 +68,6 @@ SUPPORTED_ARGUMENTS = [
             }
     },
     {
-        'name': 'granularity',
-        'arg_params':
-            {
-                'type': xNumArrayType,
-                'help': 'Granularity (single value or per dimension array): a valid discretization of the input space (8 bit image -> 1/256)'
-            }
-    },
-    {
         'name': 'num_abstractions',
         'arg_params':
             {
@@ -137,30 +77,12 @@ SUPPORTED_ARGUMENTS = [
             }
     },
     {
-        'name': 'balance_factor',
-        'arg_params':
-            {
-                'type': float,
-                'help': 'RFGSM balance factor (1.0 -> all FGSM, 0.0 -> random manipulations)',
-                'default': 0.95
-            }
-    },
-    {
         'name': 'verification_strategy',
         'arg_params':
             {
                 'type': strategyType('verification'),
                 'help': "Verification strategy: (oneof {})".format(get_strategy_choices('verification')),
                 'default': strategy_registry.VERIFICATION_STRATEGIES['discrete_search']
-            }
-    },
-    {
-        'name': 'dimension_ranking_strategy',
-        'arg_params':
-            {
-                'type': strategyType('dimension_ranking'),
-                'help': "RFGSM dimension ranking strategy: (oneof {})".format(get_strategy_choices('dimension_ranking')),
-                'default': strategy_registry.DIMENSION_RANKING_STRATEGIES['gradient_based']
             }
     },
     {
@@ -179,33 +101,6 @@ SUPPORTED_ARGUMENTS = [
                 'type': strategyType('partitioning'),
                 'help': "Partitioning strategy: (oneof {})".format(get_strategy_choices('partitioning')),
                 'default': strategy_registry.PARTITIONING_STRATEGIES['largest_first']
-            }
-    },
-    {
-        'name': 'partitioning_divisor',
-        'arg_params':
-            {
-                'type': int,
-                'help': "Number of divisions on each dimension during partitioning",
-                'default': 2
-            }
-    },
-    {
-        'name': 'partitioning_num_dimensions',
-        'arg_params':
-            {
-                'type': int,
-                'help': "Number of dimensions to partition",
-                'default': 3
-            }
-    },
-    {
-        'name': 'verification_point_threshold',
-        'arg_params':
-            {
-                'type': int,
-                'help': "Threshold number of discrete points under which verification should occur",
-                'default': 10000
             }
     },
     {
@@ -259,7 +154,52 @@ def parse_cmdline_args(args, prog):
         description="VERAPAK: framework for verifying adversarial robustness of DNNs", prog=prog)
     for arg in SUPPORTED_ARGUMENTS:
         parser.add_argument(f"--{arg['name']}", **arg['arg_params'])
+    add_per_strategy_groups(parser, prog)
     return parser.parse_args(args)
+
+def get_strategy_groups_supported():
+    supported = list()
+    for strategy_type in strategy_registry.ALL_STRATEGIES.values():
+        for strategy in strategy_type.values():
+            params = strategy.get_config_parameters()
+            if params is not None and len(params) > 0:
+                supported.extend(params)
+    return supported
+
+def add_per_strategy_groups(parser, prog):
+    params_listed = {}
+    strat_dict = {}
+    for strategy_type, v1 in strategy_registry.ALL_STRATEGIES.items():
+        for strategy, v2 in v1.items():
+            params = v2.get_config_parameters()
+            if params is not None and len(params) > 0:
+                name = f"{strategy_type}/\033[1m{strategy}\033[0m"
+                d = {"desc": [], "args": []}
+                for arg in params:
+                    if arg["name"] in params_listed:
+                        d["desc"].append(arg["name"])
+                    else:
+                        d["args"].append(arg)
+                        params_listed[arg["name"]] = name
+                if len(d["desc"]) == 0:
+                    d["desc"] = None
+                else:
+                    desc = ""
+                    first = True
+                    for desc_part in d["desc"]:
+                        if not first:
+                            desc += "\n"
+                        else:
+                            first = False
+                        desc += f"  --{desc_part} (see definition above in {params_listed[desc_part]})"
+                    d["desc"] = desc
+                strat_dict[name] = d
+
+    large_group = parser.add_argument_group("\n\n\033[53mper-strategy options\033[0m", "  ")
+    for strat, d in strat_dict.items():
+        group = parser.add_argument_group(" " + strat, d["desc"])
+        for arg in d["args"]:
+            group.add_argument(f"--{arg['name']}", **arg["arg_params"])
 
 
 class FileParser:
@@ -364,22 +304,21 @@ def parse_args(args, prog):
     except:
         vnnlib_args = {"error": "bad_vnnlib_args"}
 
-    args = combine_args(SUPPORTED_ARGUMENTS, vars(cmd_args), file_args, vnnlib_args)
+    args = combine_args([*SUPPORTED_ARGUMENTS, *get_strategy_groups_supported()], vars(cmd_args), file_args, vnnlib_args)
     
     if "error" in args:
         return args
 
-    if type(args["granularity"][0]) == type(""):
+    if "granularity" in args and args["granularity"] is not None and args["granularity"][0] is str:
         new_granularity = []
-        for i in range(len(args["radius"])):
+        for i in range(len(data["radius"])):
             j = i
             if len(args["granularity"]) == 1:
                 j = 0
-
             if type(args["granularity"][j]) == type("") and args["granularity"][j].endswith("x"):
-                new_granularity.append(float(args["granularity"][j][:-1]) * args["radius"][i])
+                new_granularity.append(float(config["granularity"][j][:-1]) * data["radius"][i])
             else:
-                new_granularity.append(float(args["granularity"][j]))
+                new_granularity.append(float(config["granularity"][j]))
         args["granularity"] = new_granularity
 
     return args

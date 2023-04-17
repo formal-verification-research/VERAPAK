@@ -3,9 +3,6 @@ import numpy as np
 
 class CenterPoint(AbstractionEngine):
 
-    def set_config(self, config):
-        pass # Does not need any info from config
-
     def abstraction_impl(self, region, num_abstractions): # num_abstractions = number of split points (1 gives centerpoint)
         retVal = []
         for i in range(1, num_abstractions + 1):
@@ -18,9 +15,4 @@ class CenterPoint(AbstractionEngine):
                 # region[j][1] = Ending point's jth dimension
             retVal.append(point)
         return retVal
-
-
-# IMPORT INTERFACE
-def IMPL():
-    return CenterPoint()
 
