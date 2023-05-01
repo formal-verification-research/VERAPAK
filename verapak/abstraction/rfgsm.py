@@ -14,7 +14,8 @@ class RFGSM(ModFGSM):
 
     def __init__(self):
         def fallback_predicate(region):
-            min_val, min_idx = _min_dim(region)
-            return min_val < (2 * granularity[min_idx])
+            return False
+            #min_val, min_idx = _min_dim(region)
+            #return min_val < (2 * granularity[min_idx])
         super().__init__(fallback_strategy=RandomPoint(), fallback_predicate=fallback_predicate)
 

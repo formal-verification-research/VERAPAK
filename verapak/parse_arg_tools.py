@@ -48,7 +48,15 @@ SUPPORTED_ARGUMENTS = [
         'arg_params':
             {
                 'type': int,
-                'help': 'Intended class label number (use index of logit). If not provided, class of Point is assumed as the intended class',
+                'help': 'Intended class label number (use index of logit). If neither this nor a constraint_file are provided, class of initial_point is assumed as the intended class.',
+            }
+    },
+    {
+        'name': 'constraint_file',
+        'arg_params':
+            {
+                'type': fileType,
+                'help': "Output constraints in a file one-per-line. They should take the form <label> [label...] <constraint> [other], where `label` is a 0-based output index, `constraint` is one of '>', '<', 'min', 'max', 'notmin', 'notmax', and '<=', and `other` is a floating point number when `constraint` is '<='"
             }
     },
     {
@@ -144,7 +152,10 @@ SUPPORTED_ARGUMENTS = [
         'arg_params':
             {
                 'help': "If given, halt on the first adversarial example",
-                'action': 'store_true'
+                'const': "loose",
+                'default': "none",
+                'nargs': "?",
+                'choices': ["loose", "strict", "none"]
             }
     }]
 

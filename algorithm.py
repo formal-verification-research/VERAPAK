@@ -7,15 +7,11 @@ import traceback
 from config import Config
 from verapak.parse_arg_tools import parse_args
 from verapak.constraints import SafetyPredicate
+from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG
 import verapak_utils
 
 class DoneInterrupt(Exception):
     pass
-
-def create_safety_predicate(graph, num_labels, target_label):
-    safety_predicate = SafetyPredicate(num_labels, graph.evaluate)
-    safety_predicate.add_constraint(target_label, "max")
-    return safety_predicate
 
 def snap_point(config, point):
     return snap.point_to_domain(point, config['domain'])
@@ -50,6 +46,7 @@ class Reporter:
     def move_area(self, set_from, set_to, amount):
         if set_from == set_to:
             return
+        print(set_from + " => " + set_to + f" ({amount})")
         self.add_area(set_from, -amount)
         self.add_area(set_to, amount)
 
@@ -66,12 +63,17 @@ class Reporter:
             raise ValueError("Bad set name \"" + which + "\"")
 
     def add_adversarial_example(self, example):
-        elapsed_time = self.get_elapsed_time
-        print(f"Found adversarial example @ {elapsed_time}")
-        self.adversarial_examples.insert(example)
-        if self.config['halt_on_first']:
+        elapsed_time = self.get_elapsed_time()
+        show = None
+        if example is not None:
+            print(f"Found adversarial example @ {elapsed_time}")
+            self.adversarial_examples.insert(example)
+            show = ["loose", "strict"]
+        if example is None:
+            show = ["loose"]
+        if self.config['halt_on_first'] in show:
             output_file = os.path.join(self.config['output_dir'], 'time_to_first.txt')
-            print(f"Saving adversarial example time to '{output_file}'")
+            print(f"Saving time to '{output_file}'")
             output_file = open(output_file, "a")
             output_file.write(f"{elapsed_time} seconds\n")
             output_file.close()
@@ -124,16 +126,11 @@ def main(config, reporter):
     all_unsafe_set = verapak_utils.RegionSet()
     unsafe_queue = queue.Queue()
 
-    target_label = config['label']
-    if type(target_label) is not int:
-        target_label = np.argmax(target_label.flatten())
-    safety_predicate = create_safety_predicate(config['graph'], np.prod(config['graph'].output_shape), target_label)
-    config['strategy']['verification'].set_safety_predicate(safety_predicate)
-
-    if not safety_predicate(config['initial_point']): # Initial point doesn't follow target label
-        reporter.add_adversarial_example(config['initial_point'])
+    safety_predicate = config["safety_predicate"]
+    if config['initial_point'] is not None and not safety_predicate(config['initial_point']): # Initial point doesn't follow target label
         unsafe_queue.put((config['initial_region'], config['initial_point']))
         reporter.add_area("some_unsafe", reporter.total_area)
+        reporter.add_adversarial_example(config['initial_point'])
     else:
         unknown_set.insert(*config['initial_region'])
         reporter.add_area("unknown", reporter.total_area)
@@ -145,20 +142,23 @@ def main(config, reporter):
         if unknown_set.size() > 0:
             region = unknown_set.pop_random()[1]
             adv_example = None
+            was_unsafe = False
         else:
             region, adv_example = unsafe_queue.get_nowait()
+            was_unsafe = True
 
         region = [x.reshape(config['graph'].input_shape).astype(config['graph'].input_dtype) for x in region]
         region_area = reporter.get_area(region)
 
         if ((region[1] - region[0]) <= 0).any():
+            print("Empty region")
             continue # Grab the next one
 
-        if adv_example is not None: # We grabbed an unsafe region
+        if was_unsafe: # We grabbed an unsafe region
             partition = config['strategy']['partitioning'].partition_impl(region)
             for r in partition:
                 r_area = reporter.get_area(r)
-                if point_in_region(r, adv_example): # TODO point_in_region?
+                if adv_example is not None and point_in_region(r, adv_example): # TODO point_in_region?
                     unsafe_queue.put_nowait((r, adv_example))
                     #reporter.move_area("some_unsafe", "some_unsafe", r_area)
                 else:
@@ -175,11 +175,11 @@ def main(config, reporter):
             all_unsafe_set.insert(*region)
             reporter.move_area("unknown", "all_unsafe", region_area)
         elif verification == SOME_UNSAFE: # TODO: UNSAFE => SOME_UNSAFE
-            reporter.add_adversarial_example(adv_example)
-            unsafe_queue.put_nowait((r, adv_example))
+            unsafe_queue.put_nowait((region, adv_example))
             reporter.move_area("unknown", "some_unsafe", region_area)
+            reporter.add_adversarial_example(adv_example)
         elif verification == TOO_BIG: # TODO: UNKNOWN => TOO_BIG
-            partition = config['strategy']['partititoning'].partition_impl(region)
+            partition = config['strategy']['partitioning'].partition_impl(region)
             for partitioned in partition:
                 abstraction = config['strategy']['abstraction'].abstraction_impl(partitioned, config['num_abstractions'])
                 abstraction = [snap_point(config, x) for x in abstraction] # Snap
@@ -187,9 +187,9 @@ def main(config, reporter):
                 for point in abstraction:
                     if not safety_predicate(point):
                         if point_in_region(partitioned, point):
-                            reporter.add_adversarial_example(point)
                             unsafe_queue.put_nowait((partitioned, point))
                             reporter.move_area("unknown", "some_unsafe", r_area)
+                            reporter.add_adversarial_example(point)
                             break
                         else:
                             found, reg = unknown_set.get_and_remove_region_containing_point(point)
@@ -198,15 +198,15 @@ def main(config, reporter):
                                         .astype(config['graph'].input_dtype)
                                         for x in reg]
                                 reg_area = reporter.get_area(reg)
-                                reporter.add_adversarial_example(point)
                                 unsafe_queue.put_nowait((reg, point))
                                 reporter.move_area("unknown", "some_unsafe", reg_area)
+                                reporter.add_adversarial_example(point)
                             else:
                                 pass # No region was removed
                 else: # Did not `break` out of the for loop
                     unknown_set.insert(*partitioned)
                     #reporter.move_area("unknown", "unknown", r_area)
-    if use_timeout and elapsed_time >= config['timeout']:
+    if config['timeout'] > 0 and reporter.get_elapsed_time() >= config['timeout']:
         reporter.halt_reason = "timeout"
     else:
         reporter.halt_reason = "done"
@@ -241,6 +241,7 @@ def write_results(config, adversarial_examples, halt_reason, elapsed_time):
     output_file.close()
 
 def run(config):
+    global reporter
     reporter = Reporter()
     try:
         main(config, reporter)

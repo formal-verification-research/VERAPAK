@@ -52,6 +52,7 @@ class DiscreteSearch(VerificationEngine):
         self.granularity = config["granularity"]
         self.valid_point = initial_point
         self.point_threshold = config["verification_point_threshold"]
+        self.safety_predicate = data["safety_predicate"]
         
         def should_attempt_predicate(region):
             num_points = get_amount_valid_points(

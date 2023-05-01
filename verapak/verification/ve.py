@@ -3,9 +3,6 @@ class VerificationEngine:
     def get_config_parameters():
         return []
 
-    def set_safety_predicate(self, safety_predicate):
-        raise NotImplementedError("VerificationEngine did not implement set_safety_predicate(safety_predicate)")
-
     def verification_impl(self, region, safety_predicate):
         raise NotImplementedError("VerificationEngine did not implement verification_impl(region, safety_predicate)")
 
