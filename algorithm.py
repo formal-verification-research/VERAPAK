@@ -9,6 +9,7 @@ from verapak.parse_arg_tools import parse_args
 from verapak.constraints import SafetyPredicate
 from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG
 import verapak_utils
+from verapak.utilities.point_tools import point_in_region
 
 class DoneInterrupt(Exception):
     pass
@@ -34,8 +35,8 @@ class Reporter:
     
     def set_initial_region(self, initial_region):
         self.initial_region = initial_region
-        self.scaling = initial_region[1] - initial_region[0] # TODO: Document this
-        self.total_area = 1
+        self.scaling = initial_region[1] - initial_region[0] # Yields the total range of inputs - thus scaling to a 1x1x1x...x1 hypercube
+        self.total_area = 1                                  # <-- which has a hypervolume of exactly 1
         self.all_safe_area = 0
         self.all_unsafe_area = 0
         self.unsafe_area = 0
@@ -128,10 +129,12 @@ def main(config, reporter):
 
     safety_predicate = config["safety_predicate"]
     if config['initial_point'] is not None and not safety_predicate(config['initial_point']): # Initial point doesn't follow target label
+        # Add initial region to unsafe queue, with the initial point as the adversarial point
         unsafe_queue.put((config['initial_region'], config['initial_point']))
         reporter.add_area("some_unsafe", reporter.total_area)
         reporter.add_adversarial_example(config['initial_point'])
     else:
+        # Add initial region to unknown set
         unknown_set.insert(*config['initial_region'])
         reporter.add_area("unknown", reporter.total_area)
     
@@ -158,9 +161,9 @@ def main(config, reporter):
             partition = config['strategy']['partitioning'].partition_impl(region)
             for r in partition:
                 r_area = reporter.get_area(r)
-                if adv_example is not None and point_in_region(r, adv_example): # TODO point_in_region?
+                if adv_example is not None and point_in_region(r, adv_example):
                     unsafe_queue.put_nowait((r, adv_example))
-                    #reporter.move_area("some_unsafe", "some_unsafe", r_area)
+                    #reporter.move_area("some_unsafe", "some_unsafe", r_area) # Redundant
                 else:
                     unknown_set.insert(*r)
                     reporter.move_area("some_unsafe", "unknown", r_area)
@@ -168,17 +171,17 @@ def main(config, reporter):
 
         verification, adv_example = config['strategy']['verification'].verification_impl(region, safety_predicate)
 
-        if verification == ALL_SAFE: # TODO: SAFE => ALL_SAFE
+        if verification == ALL_SAFE:
             all_safe_set.insert(*region)
             reporter.move_area("unknown", "all_safe", region_area)
-        elif verification == ALL_UNSAFE: # TODO: Create ALL_UNSAFE
+        elif verification == ALL_UNSAFE:
             all_unsafe_set.insert(*region)
             reporter.move_area("unknown", "all_unsafe", region_area)
-        elif verification == SOME_UNSAFE: # TODO: UNSAFE => SOME_UNSAFE
+        elif verification == SOME_UNSAFE:
             unsafe_queue.put_nowait((region, adv_example))
             reporter.move_area("unknown", "some_unsafe", region_area)
             reporter.add_adversarial_example(adv_example)
-        elif verification == TOO_BIG: # TODO: UNKNOWN => TOO_BIG
+        elif verification == TOO_BIG:
             partition = config['strategy']['partitioning'].partition_impl(region)
             for partitioned in partition:
                 abstraction = config['strategy']['abstraction'].abstraction_impl(partitioned, config['num_abstractions'])
@@ -264,7 +267,10 @@ def run(config):
     print('done')
 
 if __name__ == "__main__":
-    config = parse_args(sys.argv[1:], prog=sys.argv[0])
+    args = sys.argv
+    if len(args) == 1:
+        args = [args[0], "--help"]
+    config = parse_args(args[1:], prog=args[0])
     if "error" in config:
         print(f"\033[38;2;255;0;0mERROR: {config['error']}\033[0m")
         write_results(config, None, "error_" + config["error"], 0, None)

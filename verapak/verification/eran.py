@@ -66,10 +66,11 @@ class ERAN(VerificationEngine):
     def set_config(self, config, data):
         graph_path = config["graph"]
         self.in_folder, self.graph_name = os.path.split(graph_path)
-        for container in client.containers.list():
-            if container.name == "eran":
-                container.remove(v=True, force=True)
-        self.container = client.containers.run("eran:latest", "/bin/sh", detach=True,
+        try:
+            client.containers.get("eran").remove(v=True, force=True)
+        except docker.errors.NotFound:
+            pass
+        self.container = client.containers.run("yodarocks1/eran:latest", "/bin/sh", detach=True,
                 name="eran", tty=True)
         self.container.exec_run("mkdir /ERAN/in")
         with open(graph_path, 'rb') as f:
