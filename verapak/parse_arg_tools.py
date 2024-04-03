@@ -56,7 +56,7 @@ SUPPORTED_ARGUMENTS = [
         'arg_params':
             {
                 'type': fileType,
-                'help': "Output constraints in a file one-per-line. They should take the form <label> [label...] <constraint> [other], where `label` is a 0-based output index, `constraint` is one of '>', '<', 'min', 'max', 'notmin', 'notmax', and '<=', and `other` is a floating point number when `constraint` is '<='"
+                'help': "Output constraints in a file one-per-line. They should take the form <label> [label...] <constraint> [other], where `label` is a 0-based output index, `constraint` is one of '>', '<', 'min', 'max', 'notmin', 'notmax', and '<=', and `other` is a floating point number (instead of a label) when it ends in `f` or contains a decimal point (`.`)."
             }
     },
     {

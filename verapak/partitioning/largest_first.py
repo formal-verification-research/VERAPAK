@@ -11,7 +11,7 @@ class LargestFirstPartitioningStrategy(PartitioningEngine):
             "arg_params": {
                 "type": int,
                 "help": "Number of divisions on each dimension during partitioning",
-                "default": 2
+                "default": 2 # TODO: Automatically determing based on PC specs, NN size, gradient amplitude, verifier used, and region size?
             }
         },
         {

@@ -8,6 +8,7 @@ from .ve import *
 
 client = docker.from_env()
 
+# TODO: Check if ERAN on its own works - where does UNKNOWN/TOO_BIG come from?
 class ERAN(VerificationEngine):
     @staticmethod
     def get_config_parameters():
