@@ -1,22 +1,9 @@
-import os
-import sys
 import time
 import numpy as np
-import queue
-import traceback
-from config import Config
-from verapak.parse_arg_tools import parse_args
-from verapak.constraints import SafetyPredicate
-from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG, UNKNOWN
-import verapak_utils
+
+from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG, UNKNOWN, BOUNDARY
 from verapak.utilities.point_tools import point_in_region
-from verapak.utilities.sets import Reporter, make_sets
-
-class DoneInterrupt(Exception):
-    pass
-
-def snap_point(config, point):
-    return snap.point_to_domain(point, config['domain'])
+from verapak.utilities.sets import make_sets
 
 def main(config, reporter):
     start_time = time.time()
@@ -26,12 +13,12 @@ def main(config, reporter):
 
     safety_predicate = config["safety_predicate"]
     # Check initial point safety
-    if initial_point is not None and not safety_predicate(initial_point):
+    if config["initial_point"] is not None and not safety_predicate(config["initial_point"]):
         # UNSAFE: Add I to SOME_UNSAFE queue
-        sets[SOME_UNSAFE](initial_region, initial_point, reporter.total_area)
+        sets[SOME_UNSAFE](config["initial_region"], config["initial_point"], reporter.total_area)
     else:
         # SAFE: Add I to UNKNOWN set
-        sets[UNKNOWN](initial_region, reporter.total_area)
+        sets[UNKNOWN](config["initial_region"], reporter.total_area)
     
     if config['timeout'] <= 0:
         timed_out = lambda: False
@@ -60,7 +47,8 @@ def main(config, reporter):
             # If both are empty, we're done!
             break
 
-        region = [x.reshape(config['graph'].input_shape).astype(config['graph'].input_dtype) for x in region]
+        region[0] = region[0].reshape(config['graph'].input_shape).astype(config['graph'].input_dtype)
+        region[1] = region[1].reshape(config['graph'].input_shape).astype(config['graph'].input_dtype)
         region_area = reporter.get_area(region)
 
         if ((region[1] - region[0]) <= 0).any(): # NOTE: Only necessary for UNKNOWN
@@ -97,16 +85,17 @@ def verify(config, region, area, sets, from_=UNKNOWN):
     verification, adv_example = verification_engine(region, safety_predicate)
 
     if verification == ALL_SAFE or verification == ALL_UNSAFE:
-        sets[verification](region, region_area, from_=from_)
+        sets[verification](region, area, from_=from_)
     elif verification == SOME_UNSAFE:
-        sets[SOME_UNSAFE](region, adv_example, region_area, from_=from_)
+        sets[SOME_UNSAFE](region, adv_example, area, from_=from_)
     elif verification == UNKNOWN or verification == TOO_BIG:
         partitions = config['strategy']['partitioning'].partition_impl(region)
         for partition in partitions:
-            # TODO: define get_area(partition) in a better location
+            inherit_data(config, region, partition)
             falsify(config, partition, sets['reporter'].get_area(partition), sets, from_=from_)
 
 def falsify(config, region, area, sets, from_=UNKNOWN):
+    # TODO: Pass parent data to child
     abstraction_engine = config['strategy']['abstraction'].abstraction_impl
     n = config['num_abstractions']
     safety_predicate = config['safety_predicate']
@@ -131,6 +120,17 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
     else:
         # All abstracted points were safe
         sets[UNKNOWN](region, area, from_=from_)
+
+def inherit_data(config, parent, child):
+    parent_data = parent[2]
+    child_data = config["graph"].evaluate(child)
+    if len(parent_data) == 0:
+        child[2] = (child_data,)
+    elif len(parent_data) == 1:
+        child[2] = (parent_data[0], child_data)
+    else:
+        child[2] = (parent_data[-2], parent_data[-1], child_data)
+
 
 TREND_EPSILON = 0.01
 RECURSION_DEPTH = 0
@@ -183,79 +183,4 @@ def should_stop_partitioning(config, region, safety_predicate):
         if abs(verification - this[0]) > TREND_EPSILON:
             return False # Too big
     return True # Fuzzy & even
-
-def create_witness(config, adversarial_example):
-    input_values = adversarial_example.flatten(),
-    output_values = config['graph'].evaluate(adversarial_example).flatten()
-
-    witness = "("
-    for idx, x in np.ndenumerate(input_values):
-        witness += f"(X_{idx[0]} {x})\\n"
-    for idx, y in np.ndenumerate(output_values):
-        witness += f"(Y_{idx[0]} {y})\\n"
-    witness += ")"
-    return witness
-
-def write_results(config, adversarial_examples, halt_reason, elapsed_time):
-    witness = ""
-    adv_count = 0
-    if adversarial_examples and adversarial_examples.size() > 0:
-        witness = create_witness(next(adversarial_examples.elements()))
-        adv_count = adversarial_examples.size()
-        adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
-        output_file = os.path.join(config['output_dir'], 'adversarial_examples.npy')
-        np.save(output_file, adv_examples_numpy)
-    if halt_reason in ["done", "first"]:
-        halt_reason = "sat" if (adv_count > 0) else "unsat"
-
-    output_file = os.path.join(config['output_dir'], 'report.csv')
-    output_file = open(output_file, 'w')
-    output_file.write(f"{halt_reason},{witness},{adv_count},{elapsed_time}\n")
-    output_file.close()
-
-def save_state(config, reporter):
-    pass
-
-def run(config):
-    global reporter
-    reporter = Reporter()
-    try:
-        main(config, reporter)
-    except KeyboardInterrupt as e:
-        reporter.halt_reason = "keyboard"
-    except DoneInterrupt as e:
-        pass
-    except BaseException as e:
-        reporter.halt_reason = "error"
-        traceback.print_exception(type(e), e, e.__traceback__)
-    
-    save_state(config, reporter)
-
-    if reporter.started:
-        reporter.give_final_report()
-        et = reporter.get_elapsed_time()
-    else:
-        et = 0
-    adversarial = reporter.get_adversarial_examples()
-    halt_reason = reporter.get_halt_reason
-    write_results(config, adversarial, halt_reason, et)
-    print('done')
-
-if __name__ == "__main__":
-    args = sys.argv
-    if len(args) == 1:
-        args = [args[0], "--help"]
-    config = parse_args(args[1:], prog=args[0])
-    if "error" in config:
-        print(f"\033[38;2;255;0;0mERROR: {config['error']}\033[0m")
-        write_results(config, None, "error_" + config["error"], 0, None)
-    else:
-        config = Config(config)
-        for strategy in config["strategy"].values():
-            strategy.set_config(config["raw"], config)
-
-        run(config)
-
-        for strategy in config["strategy"].values():
-            strategy.shutdown()
 

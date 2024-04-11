@@ -1,4 +1,4 @@
-from .dre import *
+from verapak.dimension_ranking.dre import DimensionRankingEngine
 import numpy as np
 
 

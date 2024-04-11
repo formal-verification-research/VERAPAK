@@ -49,8 +49,8 @@ bool operator<(numpy::ndarray const &p1, numpy::ndarray const &p2) {
 
 #include <iostream>
 
-bool RegionSet::insert(numpy::ndarray const &l, numpy::ndarray const &u) {
-  auto region = pointPairToRegion(l, u);
+bool RegionSet::insert(numpy::ndarray const &l, numpy::ndarray const &u, python::tuple &a) {
+  auto region = pointPairAndAttributesToRegionPair(l, u, a);
   auto [iter, inserted] = region_set_internal.insert(region);
   return inserted;
 }
@@ -62,7 +62,7 @@ RegionSet::get_and_remove_region_containing_point(numpy::ndarray const &p) {
   if (iter == region_set_internal.end()) {
     return python::make_tuple(false, python::object());
   }
-  auto python_region = regionToPointPair(*iter);
+  auto python_region = regionPairToPointPairAndAttributes(*iter);
   region_set_internal.erase(iter);
   return python::make_tuple(true, python_region);
 }
@@ -75,7 +75,7 @@ python::tuple RegionSet::pop_random() {
   }
   auto iter = region_set_internal.begin(); 
   std::advance(iter, rand() % region_set_internal.size());
-  auto python_region = regionToPointPair(*iter);
+  auto python_region = regionPairToPointPairAndAttributes(*iter);
   region_set_internal.erase(iter);
   return python::make_tuple(true, python_region);
 }

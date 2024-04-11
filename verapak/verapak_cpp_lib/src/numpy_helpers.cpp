@@ -23,8 +23,9 @@ numpy::ndarray pointToNumpyArray(grid::point const &in) {
   return retVal.copy();
 }
 
-grid::region pointPairToRegion(numpy::ndarray const &lower,
-                               numpy::ndarray const &upper) {
+grid::region_pair pointPairAndAttributesToRegionPair(numpy::ndarray const &lower,
+                               numpy::ndarray const &upper,
+                               python::tuple const &attributes) {
   auto flat_lower = lower.reshape(python::make_tuple(-1));
   auto flat_upper = upper.reshape(python::make_tuple(-1));
   auto size_lower = flat_lower.shape(0);
@@ -54,19 +55,19 @@ grid::region pointPairToRegion(numpy::ndarray const &lower,
     }
     retVal.push_back({lower, upper});
   }
-  return retVal;
+  return std::make_pair(retVal, attributes);
 }
 
-python::tuple regionToPointPair(grid::region const &in) {
+python::tuple regionPairToPointPairAndAttributes(grid::region_pair const &in) {
   grid::point lower;
-  lower.reserve(in.size());
+  lower.reserve(in.first.size());
   grid::point upper;
-  upper.reserve(in.size());
-  for (auto &&pair : in) {
+  upper.reserve(in.first.size());
+  for (auto &&pair : in.first) {
     lower.push_back(pair.first);
     upper.push_back(pair.second);
   }
   auto numpy_lower = pointToNumpyArray(lower);
   auto numpy_upper = pointToNumpyArray(upper);
-  return python::make_tuple(numpy_lower, numpy_upper);
+  return python::make_tuple(numpy_lower, numpy_upper, in.second);
 }

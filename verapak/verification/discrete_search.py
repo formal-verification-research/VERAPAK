@@ -1,14 +1,14 @@
-from .ve import *
-from ..utilities.point_tools import *
-from ..parse_arg_types import xNumArrayType
+from verapak.verification.ve import *
+from verapak.utilities.point_tools import *
+from verapak.parse_args.types import xNumArrayType
 
 class DiscreteSearch(VerificationEngine):
-    @staticmethod
-    def get_config_parameters():
+    @classmethod
+    def get_config_parameters(cls):
         return [{
             "name": "verification_point_threshold",
             "arg_params": {
-                "type": int,
+                "type": "int",
                 "help": "Threshold number of discrete points under which verification should occur",
                 "default": 10000
             }
@@ -16,10 +16,23 @@ class DiscreteSearch(VerificationEngine):
         {
             "name": "granularity",
             "arg_params": {
-                "type": xNumArrayType,
+                "type": "x_num_array",
                 "help": "Granularity (single value or per dimension array): a valid discretization of the input space (8 bit image -> 1/255)"
             }
         }]
+    
+    @classmethod
+    def evaluate_args(cls, args, v):
+        v["granularity"] = args["granularity"], # RESHAPED
+        v["verification_point_threshold"] = args["verification_point_threshold"]
+
+        # Reshape granularity
+        if v["radius"] is not None:
+            v["granularity"] = np.array(v["granularity"], dtype=np.string_).reshape(v["graph"].input_shape)
+            v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), radius, 1)
+            v["granularity"] = v["granularity"].reshape(v["graph"].input_shape)
+        else:
+            v["granularity"] = np.array(v["granularity"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
 
     def __init__(self):
         self.discrete_point_generator = enumerate_valid_points
@@ -48,11 +61,11 @@ class DiscreteSearch(VerificationEngine):
         except RecursionError: # Tried to process something too big
             return TOO_BIG, None
 
-    def set_config(self, config, data):
-        self.granularity = config["granularity"]
-        self.valid_point = initial_point
-        self.point_threshold = config["verification_point_threshold"]
-        self.safety_predicate = data["safety_predicate"]
+    def set_config(self, v):
+        self.granularity = v["granularity"]
+        self.valid_point = v["initial_point"]
+        self.point_threshold = v["verification_point_threshold"]
+        self.safety_predicate = v["safety_predicate"]
         
         def should_attempt_predicate(region):
             num_points = get_amount_valid_points(

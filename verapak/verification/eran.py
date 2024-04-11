@@ -10,16 +10,23 @@ client = docker.from_env()
 
 # TODO: Check if ERAN on its own works - where does UNKNOWN/TOO_BIG come from?
 class ERAN(VerificationEngine):
-    @staticmethod
+    @classmethod
     def get_config_parameters():
         return [{
             "name": "eran_timeout",
             "arg_params": {
-                "type": float,
-                "help": "ERAN timeout. 0 for no timeout, negative timeout is a fraction of the full timeout",
-                "default": -10
+                "type": "float",
+                "help": "ERAN timeout. 0 for no timeout, negative timeout is a multiple of the full timeout",
+                "default": -0.1
             }
         }]
+
+    @classmethod
+    def evaluate_args(cls, args, v):
+        v["eran_timeout"] = args["eran_timeout"]
+        if v["eran_timeout"] < 0:
+            v["eran_timeout"] = -v["eran_timeout"] / v["timeout"]
+        v["eran_timeout"] = math.ceil(v["eran_timeout"])
 
     def __init__(self):
         pass
@@ -64,8 +71,8 @@ class ERAN(VerificationEngine):
         else:
             return TOO_BIG, None
 
-    def set_config(self, config, data):
-        graph_path = config["graph"]
+    def set_config(self, v):
+        graph_path = v["graph"]
         self.in_folder, self.graph_name = os.path.split(graph_path)
         try:
             client.containers.get("eran").remove(v=True, force=True)
@@ -81,12 +88,9 @@ class ERAN(VerificationEngine):
             self._write_bytes(f.read(), "eran_verify.py")
         self.container.exec_run("cp /ERAN/in/eran_verify.py /ERAN/tf_verify/eran_verify.py")
 
-        self.timeout = config["eran_timeout"]
-        if self.timeout < 0:
-            self.timeout = config["timeout"] / self.timeout
-        self.timeout = math.ceil(self.timeout)
+        self.timeout = v["eran_timeout"]
 
-        self.set_safety_predicate(data["safety_predicate"])
+        self.set_safety_predicate(v["safety_predicate"])
 
     def shutdown(self):
         self.container.stop()

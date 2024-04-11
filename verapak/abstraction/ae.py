@@ -1,7 +1,11 @@
 class AbstractionEngine:
-    @staticmethod
-    def get_config_parameters():
+    @classmethod
+    def get_config_parameters(cls):
         return []
+
+    @classmethod
+    def evaluate_args(cls, args, v):
+        return {}
 
     def abstraction_impl(self, region, num_abstractions):
         raise NotImplementedError("AbstractionEngine did not implement abstraction_impl(region, num_abstractions)")

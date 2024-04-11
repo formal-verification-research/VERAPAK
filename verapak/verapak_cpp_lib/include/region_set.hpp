@@ -16,7 +16,9 @@ namespace grid {
 struct region_less_compare;
 using numeric_type_t = double;
 using region_element = std::pair<numeric_type_t, numeric_type_t>;
+// TODO: Replace some instances of `region` with `region_pair.first`
 using region = std::vector<region_element>;
+using region_pair = std::pair<const region&, const python::tuple&>;
 using point = std::vector<numeric_type_t>;
 } // namespace grid
 
@@ -42,6 +44,15 @@ struct region_less_compare {
   bool operator()(grid::point const &p1, grid::point const &p2) const {
     return p1 < p2;
   }
+  bool operator()(grid::point const& p, grid::region_pair const& r) const {
+      return p < r.first;
+  }
+  bool operator()(grid::region_pair const& r, grid::point const& p) const {
+      return r.first < p;
+  }
+  bool operator()(grid::region_pair const& r1, grid::region_pair const& r2) const {
+      return r1.first < r2.first;
+  }
 };
 
 struct ndarray_less_compare {
@@ -54,7 +65,7 @@ struct ndarray_less_compare {
 
 
 
-using region_set = std::set<grid::region, grid::region_less_compare>;
+using region_set = std::set<grid::region_pair, grid::region_less_compare>;
 using region_key_point_map =
     std::map<grid::region, grid::point, grid::region_less_compare>;
 using region_stack = std::vector<grid::region>;
@@ -63,7 +74,7 @@ using point_set = std::set<numpy::ndarray, grid::ndarray_less_compare>;
 
 struct RegionSet {
   region_set region_set_internal;
-  bool insert(numpy::ndarray const &, numpy::ndarray const &);
+  bool insert(numpy::ndarray const &, numpy::ndarray const &, python::tuple const &);
   std::size_t size();
   python::tuple get_and_remove_region_containing_point(numpy::ndarray const &);
   python::tuple pop_random();

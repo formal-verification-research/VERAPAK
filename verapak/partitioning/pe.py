@@ -1,7 +1,11 @@
 class PartitioningEngine:
-    @staticmethod
-    def get_config_parameters():
+    @classmethod
+    def get_config_parameters(cls):
         return []
+
+    @classmethod
+    def evaluate_args(cls, v):
+        return v
 
     def partition_impl(self, region):
         raise NotImplementedError(

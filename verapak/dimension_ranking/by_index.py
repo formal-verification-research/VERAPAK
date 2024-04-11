@@ -1,7 +1,7 @@
 from .dre import DimensionRankingEngine
 
 
-class ByIndex(DimensionRankingEngine):
+class ByIndexDimSelection(DimensionRankingEngine):
     def __init__(self, **kwargs):
         pass
 

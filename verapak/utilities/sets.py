@@ -1,6 +1,7 @@
 import queue
 from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG, UNKNOWN, BOUNDARY
 import verapak_utils
+import numpy as np
 
 def _make_RegionSet(reporter, name):
     s = verapak_utils.RegionSet()

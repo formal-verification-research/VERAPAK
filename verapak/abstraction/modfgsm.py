@@ -1,10 +1,9 @@
-from .ae import AbstractionEngine
-from .center_point import CenterPoint
+from verapak.abstraction.ae import AbstractionEngine
+from verapak.abstraction.center_point import CenterPoint
 import numpy as np
-from ..dimension_ranking.by_index import ByIndex
+from verapak.dimension_ranking.by_index import ByIndexDimSelection
 import math
-from ..snap import point_to_domain
-from ..parse_arg_types import xNumArrayType, strategyType, get_strategy_choices
+from verapak.parse_args.types import get_strategy_choices
 
 
 def _min_dim(region):
@@ -14,12 +13,12 @@ def _min_dim(region):
 
 
 class ModFGSM(AbstractionEngine):
-    @staticmethod
-    def get_config_parameters():
+    @classmethod
+    def get_config_parameters(cls):
         return [{
             "name": "balance_factor",
             "arg_params": {
-                "type": float,
+                "type": "float",
                 "help": "RFGSM balance factor (1.0 -> all FGSM, 0.0 -> pure random)",
                 "default": 0.95
             }
@@ -27,7 +26,7 @@ class ModFGSM(AbstractionEngine):
         {
             "name": "granularity",
             "arg_params": {
-                "type": xNumArrayType,
+                "type": "x_num_array",
                 "help": "Granularity (single value or per dimension array): a valid discretization of the input space (8 bit image -> 1/255)"
             }
         },
@@ -35,11 +34,20 @@ class ModFGSM(AbstractionEngine):
             'name': 'dimension_ranking_strategy',
             'arg_params':
                 {
-                    'type': strategyType('dimension_ranking'),
+                    'type': "strategy:dimension_ranking",
                     'help': "RFGSM dimension ranking strategy: (oneof {})".format(get_strategy_choices('dimension_ranking')),
-                    'default': ByIndex
+                    'default': ByIndexDimSelection
                 }
         }]
+
+    @classmethod
+    def evaluate_args(cls, args, v):
+        v["balance_factor"] = args["balance_factor"]
+        v["granularity"] = args["granularity"]
+        v["strategy"]["dimension_ranking"] = args["dimension_ranking_strategy"]()
+
+        # Reshape and compute each strategy's optional arguments
+        v["strategy"]["dimension_ranking"].evaluate_args(args, v)
 
 
     def __init__(self, fallback_strategy=None, fallback_predicate=lambda region: False):
@@ -72,21 +80,26 @@ class ModFGSM(AbstractionEngine):
         #print(self.granularity[min_dimension_index])
         #print(max_radius / self.granularity[min_dimension_index])
 
-        sorted_dims = self.dimension_ranking_strategy.rank_indices_impl(region)
-        unraveled_sorted_dims = [np.unravel_index(
-            x, region[0].shape) for x in sorted_dims]
-        if len(unraveled_sorted_dims[0]) == 1:
-            unraveled_sorted_dims = [x[0] for x in unraveled_sorted_dims]
-        M = np.full(region[0].shape, 0.0)
-        num_dims_fgsm = math.floor(self.balance_factor * region[0].size)
-        unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
-        for dim_index in unraveled_sorted_dims:
-            M[dim_index] = 1.0
+        if self.balance_factor >= 1:
+            M = np.full(region[0].shape, 1.0)
+        elif self.balance_factor <= 0:
+            M = np.full(region[0].shape, 0.0)
+        else:
+            sorted_dims = self.dimension_ranking_strategy.rank_indices_impl(region)
+            unraveled_sorted_dims = [np.unravel_index(
+                x, region[0].shape) for x in sorted_dims]
+            if len(unraveled_sorted_dims[0]) == 1:
+                unraveled_sorted_dims = [x[0] for x in unraveled_sorted_dims]
+            M = np.full(region[0].shape, 0.0)
+            num_dims_fgsm = math.floor(self.balance_factor * region[0].size)
+            unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
+            for dim_index in unraveled_sorted_dims:
+                M[dim_index] = 1.0
         fgsm_part = gradient_sign * M
         Mnot = M * -1.0 + 1.0
 
         retVal = []
-        for i in range(0, num_abstractions):
+        for _ in range(0, num_abstractions):
             if self.granularity is None:
                 current_epsilon = np.random.uniform(e1_lowerbound, e1_upperbound)
             else:
@@ -99,19 +112,22 @@ class ModFGSM(AbstractionEngine):
 
         return retVal
 
-    def set_config(self, config, data):
-        self.balance_factor = config["balance_factor"]
-        self.gradient_function = data["gradient_function"]
-        self.granularity = config["granularity"]
+    def set_config(self, v):
+        self.balance_factor = v["balance_factor"]
+        self.gradient_function = v["gradient_function"]
+        self.granularity = v["granularity"]
 
-        self.dimension_ranking_strategy = config["dimension_ranking_strategy"]()
-        self.dimension_ranking_strategy.set_config(config, data)
+        if self.balance_factor > 0 and self.balance_factor < 1:
+            self.dimension_ranking_strategy = v["strategy"]["dimension_ranking"]
+        else:
+            self.dimension_ranking_strategy = None
 
         if self.fallback_strategy is not None:
-            self.fallback_strategy.set_config(config, data)
+            self.fallback_strategy.set_config(v)
 
     def shutdown(self):
-        self.dimension_ranking_strategy.shutdown()
+        if self.dimension_ranking_strategy is not None:
+            self.dimension_ranking_strategy.shutdown()
         if self.fallback_strategy is not None:
             self.fallback_strategy.shutdown()
 

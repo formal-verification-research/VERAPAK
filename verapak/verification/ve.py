@@ -1,7 +1,11 @@
 class VerificationEngine:
-    @staticmethod
-    def get_config_parameters():
+    @classmethod
+    def get_config_parameters(cls):
         return []
+
+    @classmethod
+    def evaluate_args(cls, args, v):
+        return {}
 
     def verification_impl(self, region, safety_predicate):
         raise NotImplementedError("VerificationEngine did not implement verification_impl(region, safety_predicate)")

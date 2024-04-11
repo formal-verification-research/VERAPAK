@@ -1,5 +1,5 @@
-from .dre import *
-from ..abstraction import center_point as cp_abstract
+from verapak.dimension_ranking.dre import DimensionRankingEngine
+from verapak.abstraction import center_point as cp_abstract
 import numpy as np
 
 
@@ -19,6 +19,6 @@ class GradientBasedDimSelection(DimensionRankingEngine):
         retVal.reverse()
         return retVal
 
-    def set_config(self, config, data):
-        self.gradient_func = data["gradient_function"]
+    def set_config(self, v):
+        self.gradient_func = v["gradient_function"]
 

@@ -1,0 +1,143 @@
+[
+  {
+    "name": "config_file",
+    "arg_params": {
+      "type": "file",
+      "help": "Configuration file: key value pairs (one per line) in the format KEY :: VALUE. Keys are the same as command line argument names in this help and values follow the same format.",
+      "default": null
+    }
+  },
+  {
+    "name": "vnnlib",
+    "arg_params": {
+      "type": "file",
+      "help": "VNNLIB file: parse out the centerpoint, intended label, and radii, and use them if no others are provided in the config_file or command line flags.",
+      "default": null
+    }
+  },
+  {
+    "name": "output_dir",
+    "arg_params": {
+      "type": "directory",
+      "help": "path to output directory where adversarial examples will be stored",
+      "default": "."
+    }
+  },
+  {
+    "name": "initial_point",
+    "arg_params": {
+      "type": "num_array",
+      "help": "Point around which robustness verification will occur",
+      "default": null
+    }
+  },
+  {
+    "name": "label",
+    "arg_params": {
+      "type": "int",
+      "help": "Intended class label number (use index of logit). If neither this nor a constraint_file are provided, class of initial_point is assumed as the intended class.",
+      "default": null
+    }
+  },
+  {
+    "name": "constraint_file",
+    "arg_params": {
+      "type": "file",
+      "help": "Output constraints in a file one-per-line. They should take the form <label> [label...] <constraint> [other], where `label` is a 0-based output index, `constraint` is one of '>', '<', 'min', 'max', 'notmin', 'notmax', and '<=', and `other` is a floating point number (instead of a label) when it ends in `f` or contains a decimal point (`.`).",
+      "default": null
+    }
+  },
+  {
+    "name": "graph",
+    "arg_params": {
+      "type": "graph_path",
+      "help": "path to serialized DNN model (ONNX, TF, etc)"
+    }
+  },
+  {
+    "name": "radius",
+    "arg_params": {
+      "type": "num_array",
+      "help": "Radius (single value or per dimension array) around initial point where robustness verification will occur",
+      "default": null
+    }
+  },
+  {
+    "name": "num_abstractions",
+    "arg_params": {
+      "type": "int",
+      "help": "Number of abstraction points to generate each pass",
+      "default": 10
+    }
+  },
+  {
+    "name": "verification_strategy",
+    "arg_params": {
+      "type": "strategy:verification",
+      "help": "Verification strategy: (oneof `discrete_search`, `eran`)",
+      "default": "eran"
+    }
+  },
+  {
+    "name": "abstraction_strategy",
+    "arg_params": {
+      "type": "strategy:abstraction",
+      "help": "Abstraction strategy: (oneof `center`, `fgsm`, `random`, `rfgsm`)",
+      "default": "rfgsm"
+    }
+  },
+  {
+    "name": "partitioning_strategy",
+    "arg_params": {
+      "type": "strategy:partitioning",
+      "help": "Partitioning strategy: (oneof `largest_first`)",
+      "default": "largest_first"
+    }
+  },
+  {
+    "name": "region_lower_bound",
+    "arg_params": {
+      "type": "num_array",
+      "help": "Lower bound for the region",
+      "default": null
+    }
+  },
+  {
+    "name": "region_upper_bound",
+    "arg_params": {
+      "type": "num_array",
+      "help": "Upper bound for the region",
+      "default": null
+    }
+  },
+  {
+    "name": "timeout",
+    "arg_params": {
+      "type": "float",
+      "help": "Number of seconds to run the program before reporting all found adversarial examples and timing out (set to 0 for 'run until interrupted')",
+      "default": 300.0
+    }
+  },
+  {
+    "name": "report_interval_seconds",
+    "arg_params": {
+      "type": "int",
+      "help": "Number of seconds between status reports",
+      "default": 2
+    }
+  },
+  {
+    "name": "halt_on_first",
+    "arg_params": {
+      "help": "If given, halt on the first adversarial example",
+      "const": "loose",
+      "default": "none",
+      "nargs": "?",
+      "choices": [
+        "loose",
+        "strict",
+        "none"
+      ]
+    }
+  }
+]

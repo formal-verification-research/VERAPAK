@@ -47,7 +47,7 @@ class Constraint:
             raise ValueError(f"Bad constraint `{constraint}`")
 
         self.repr = " ".join(list(map(lambda n: f"y{int(n)}", labels))) + " " + constraint
-        if other_float:
+        if self.other_const:
             self.repr += " " + str(other)
         elif other is not None:
             self.repr += f" y{int(other)}"
@@ -57,7 +57,7 @@ class Constraint:
         self.other = other
 
     def __invert__(self):
-        return Constraint(self.labels, INVERT_MAP[self.constraint], other=self.other)
+        return Constraint(self.labels, Constraint.INVERT_MAP[self.constraint], other=self.other)
 
     def is_vnnlib(self, force=False):
         if self.constraint == ">=" and not force:
@@ -74,7 +74,7 @@ class Constraint:
             return self
         elif not self.is_vnnlib(force=True):
             raise ValueError(f"Cannot convert constraint `{self.repr}` to vnnlib format")
-        return Constraint(self.labels, self.constraint.replace("=", ""), other=other)
+        return Constraint(self.labels, self.constraint.replace("=", ""), other=self.other)
 
 
     def __repr__(self):
@@ -109,7 +109,7 @@ class Constraint:
             else:
                 result = 0
 
-            if invert:
+            if "not" in self.constraint:
                 return 1 - result
             return result
 

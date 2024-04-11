@@ -1,7 +1,11 @@
 class DimensionRankingEngine:
-    @staticmethod
-    def get_config_parameters():
+    @classmethod
+    def get_config_parameters(cls):
         return []
+
+    @classmethod
+    def evaluate_args(cls, v):
+        return v
 
     def rank_indices_impl(self, region):
         raise NotImplementedError("DimensionRankingEngine did not implement rank_indices_impl(region)")
