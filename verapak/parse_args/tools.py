@@ -60,6 +60,8 @@ def add_per_strategy_groups(parser, prog):
     for strat, d in strat_dict.items():
         group = parser.add_argument_group(" " + strat, d["desc"])
         for arg in d["args"]:
+            if "type" in arg["arg_params"]
+                arg["arg_params"]["type"] = type_string_to_type(arg["arg_params"]["type"])
             group.add_argument(f"--{arg['name']}", **arg["arg_params"])
 
 
