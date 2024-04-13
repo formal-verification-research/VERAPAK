@@ -1,11 +1,11 @@
 from verapak.dimension_ranking.dre import DimensionRankingEngine
-from verapak.abstraction import center_point as cp_abstract
+from verapak.abstraction.center_point import CenterPoint
 import numpy as np
 
 
 class GradientBasedDimSelection(DimensionRankingEngine):
     def __init__(self):
-        self.center_point_abstraction = cp_abstract.CenterPoint()
+        self.center_point_abstraction = CenterPoint()
 
     def rank_indices_impl(self, region):
         if self.gradient_func is None:
