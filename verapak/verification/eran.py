@@ -12,7 +12,7 @@ client = None#docker.from_env()
 # TODO: Check if ERAN on its own works - where does UNKNOWN/TOO_BIG come from?
 class ERAN(VerificationEngine):
     @classmethod
-    def get_config_parameters():
+    def get_config_parameters(cls):
         return [{
             "name": "eran_timeout",
             "arg_params": {
