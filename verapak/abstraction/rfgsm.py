@@ -1,4 +1,4 @@
-from .modfgsm import ModFGSM, _min_dim
+from .modfgsm import ModFGSM
 from .random_point import RandomPoint
 from ..dimension_ranking.gradient_based import GradientBasedDimSelection
 
