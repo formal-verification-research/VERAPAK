@@ -25,6 +25,9 @@ def load_graph_by_type(graph_path, graph_type):
     if graph_type == "ONNX":
         from .onnx_model import ONNXModel
         return ONNXModel(graph_path)
+    elif graph_type == "KERAS":
+        # TODO
+        pass
     else:
         raise NotImplementedError(
             f"Graph type {graph_type} is not implemented")

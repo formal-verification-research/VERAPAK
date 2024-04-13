@@ -1,6 +1,5 @@
 from verapak.verification.ve import *
 from verapak.utilities.point_tools import *
-from verapak.parse_args.types import xNumArrayType
 
 class DiscreteSearch(VerificationEngine):
     @classmethod

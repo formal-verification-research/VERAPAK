@@ -6,7 +6,8 @@ import numpy as np
 import tarfile
 from .ve import *
 
-client = docker.from_env()
+# TODO: FIX DOCKER
+client = None#docker.from_env()
 
 # TODO: Check if ERAN on its own works - where does UNKNOWN/TOO_BIG come from?
 class ERAN(VerificationEngine):

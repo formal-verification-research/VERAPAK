@@ -1,6 +1,6 @@
-from by_index import ByIndexDimSelection
-from gradient_based import GradientBasedDimSelection
-from largest_first import LargestFirstDimSelection
+from .by_index import ByIndexDimSelection
+from .gradient_based import GradientBasedDimSelection
+from .largest_first import LargestFirstDimSelection
 
 STRATEGIES = {
     "gradient_based": GradientBasedDimSelection,

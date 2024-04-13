@@ -3,7 +3,6 @@ from verapak.abstraction.center_point import CenterPoint
 import numpy as np
 from verapak.dimension_ranking.by_index import ByIndexDimSelection
 import math
-from verapak.parse_args.types import get_strategy_choices
 
 
 def _min_dim(region):
@@ -35,7 +34,7 @@ class ModFGSM(AbstractionEngine):
             'arg_params':
                 {
                     'type': "strategy:dimension_ranking",
-                    'help': "RFGSM dimension ranking strategy: (oneof {})".format(get_strategy_choices('dimension_ranking')),
+                    'help': "RFGSM dimension ranking strategy: (oneof gradient_based, by_index, largest_first)",
                     'default': ByIndexDimSelection
                 }
         }]
