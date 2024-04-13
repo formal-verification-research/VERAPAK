@@ -61,7 +61,7 @@ bool operator<(numpy::ndarray const &p1, numpy::ndarray const &p2) {
 
 #include <iostream>
 
-bool RegionSet::insert(numpy::ndarray const &l, numpy::ndarray const &u, python::tuple &a) {
+bool RegionSet::insert(numpy::ndarray const &l, numpy::ndarray const &u, python::tuple const &a) {
   auto region = pointPairAndAttributesToRegionPair(l, u, a);
   auto [iter, inserted] = region_set_internal.insert(region);
   return inserted;
