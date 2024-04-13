@@ -14,9 +14,9 @@ grid::point numpyArrayToPoint(numpy::ndarray const &);
 
 numpy::ndarray pointToNumpyArray(grid::point const &);
 
-grid::region pointPairToRegion(numpy::ndarray const &, numpy::ndarray const &);
+grid::region_pair pointPairAndAttributesToRegionPair(numpy::ndarray const &, numpy::ndarray const &, python::tuple const &);
 
-python::tuple regionToPointPair(grid::region const &);
+python::tuple regionPairToPointPairAndAttributes(grid::region_pair const &);
 
 #endif
 

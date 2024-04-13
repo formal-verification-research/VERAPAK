@@ -16,7 +16,6 @@ namespace grid {
 struct region_less_compare;
 using numeric_type_t = double;
 using region_element = std::pair<numeric_type_t, numeric_type_t>;
-// TODO: Replace some instances of `region` with `region_pair.first`
 using region = std::vector<region_element>;
 using region_pair = std::pair<const region&, const python::tuple&>;
 using point = std::vector<numeric_type_t>;

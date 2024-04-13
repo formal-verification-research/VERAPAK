@@ -41,6 +41,18 @@ bool operator<(grid::point const &p1, grid::point const &p2) {
   return false;
 }
 
+bool operator<(grid::point const& p, grid::region_pair const& r) {
+    return p < r.first;
+}
+
+bool operator<(grid::region_pair const& r, grid::point const& p) {
+    return r.first < p;
+}
+
+bool operator<(grid::region_pair const& r1, grid::region_pair const& r2) {
+    return r1.first < r2.first;
+}
+
 bool operator<(numpy::ndarray const &p1, numpy::ndarray const &p2) {
   auto v1 = numpyArrayToPoint(p1);
   auto v2 = numpyArrayToPoint(p2);
