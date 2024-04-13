@@ -13,8 +13,8 @@ def parse_cmdline_args(args, prog):
     parser = argparse.ArgumentParser(
         description="VERAPAK: framework for verifying adversarial robustness of DNNs", prog=prog)
     for arg in SUPPORTED_ARGUMENTS:
-        if "type" in arg:
-            arg["type"] = type_string_to_type(arg["type"])
+        if "type" in arg["arg_params"]:
+            arg["arg_params"]["type"] = type_string_to_type(arg["type"])
         parser.add_argument(f"--{arg['name']}", **arg['arg_params'])
     add_per_strategy_groups(parser, prog)
     return parser.parse_args(args)
