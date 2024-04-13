@@ -2,6 +2,11 @@ import queue
 from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG, UNKNOWN, BOUNDARY
 import verapak_utils
 import numpy as np
+import time
+import os
+
+class DoneInterrupt(Exception):
+    pass
 
 def _make_RegionSet(reporter, name):
     s = verapak_utils.RegionSet()

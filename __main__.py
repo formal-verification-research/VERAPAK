@@ -6,10 +6,8 @@ import numpy as np
 from config import Config
 from verapak.parse_args.tools import parse_args
 from algorithm import main
-from verapak.utilities.sets import Reporter
+from verapak.utilities.sets import Reporter, DoneInterrupt
 
-class DoneInterrupt(Exception):
-    pass
 
 def create_witness(config, adversarial_example):
     input_values = adversarial_example.flatten(),
