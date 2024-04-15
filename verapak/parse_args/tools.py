@@ -2,11 +2,13 @@ import argparse  # https://docs.python.org/3/library/argparse.htm
 import sys
 import os
 import json
+from pathlib import Path
 from verapak.parse_args import strategy_registry
 from verapak.utilities.vnnlib_lib import VNNLib, NonMaximalVNNLibError
 from verapak.parse_args.types import type_string_to_type
 
-SUPPORTED_ARGUMENTS = json.load(open("verapak/parse_args/args.json", 'r'))
+ARGS_PATH = Path(__file__).parent / "args.json"
+SUPPORTED_ARGUMENTS = json.load(ARGS_PATH.open())
 
 
 def parse_cmdline_args(args, prog):
@@ -146,7 +148,7 @@ def parse_args(args, prog):
         print(e.args)
         setattr(cmd_args, "error", "bad_cmd_args")
 
-    if hasattr(cmd_args, "config_file"):
+    if hasattr(cmd_args, "config_file") and cmd_args.config_file is not None:
         try:
             file_args = parse_file_args(cmd_args.config_file)
         except ValueError as e:
@@ -156,9 +158,9 @@ def parse_args(args, prog):
         file_args = None
 
     try:
-        if hasattr(cmd_args, "vnnlib_file"):
+        if hasattr(cmd_args, "vnnlib_file") and cmd_args.vnnlib_file is not None:
             vnnlib_args = parse_vnnlib_args(cmd_args.vnnlib_file)
-        elif file_args is not None and "vnnlib" in file_args:
+        elif file_args is not None and "vnnlib" in file_args and file_args["vnnlib"] is not None:
             vnnlib_args = parse_vnnlib_args(file_args["vnnlib"])
         else:
             vnnlib_args = None

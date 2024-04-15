@@ -21,17 +21,21 @@ class DiscreteSearch(VerificationEngine):
         }]
     
     @classmethod
-    def evaluate_args(cls, args, v):
-        v["granularity"] = args["granularity"], # RESHAPED
+    def evaluate_args(cls, args, v, errors):
+        v["granularity"] = args.get("granularity"), # RESHAPED
         v["verification_point_threshold"] = args["verification_point_threshold"]
 
+        if v["granularity"] is None:
+            errors.missing("granularity", reason="Discrete search requires granularity")
+
         # Reshape granularity
-        if v["radius"] is not None:
-            v["granularity"] = np.array(v["granularity"], dtype=np.string_).reshape(v["graph"].input_shape)
-            v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), radius, 1)
-            v["granularity"] = v["granularity"].reshape(v["graph"].input_shape)
-        else:
-            v["granularity"] = np.array(v["granularity"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
+        if len(errors) == 0:
+            if v["radius"] is not None:
+                v["granularity"] = np.array(v["granularity"], dtype=np.string_).reshape(v["graph"].input_shape)
+                v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), radius, 1)
+                v["granularity"] = v["granularity"].reshape(v["graph"].input_shape)
+            else:
+                v["granularity"] = np.array(v["granularity"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
 
     def __init__(self):
         self.discrete_point_generator = enumerate_valid_points

@@ -25,13 +25,14 @@ class LargestFirstPartitioningStrategy(PartitioningEngine):
         }]
 
     @classmethod
-    def evaluate_args(cls, args, v):
+    def evaluate_args(cls, args, v, errors):
         v["partitioning_divisor"] = args["partitioning_divisor"]
         v["partitioning_dimensions"] = args["partitioning_dimensions"]
-
-        graph_input_dims = reduce(lambda a, b: a*b, v["graph"].input_shame, 1)
-        if v["partitioning_dimensions"] > graph_input_dims:
-            v["partitioning_dimensions"] = graph_input_dims
+        
+        if len(errors) == 0:
+            graph_input_dims = reduce(lambda a, b: a*b, v["graph"].input_shape, 1)
+            if v["partitioning_dimensions"] > graph_input_dims:
+                v["partitioning_dimensions"] = graph_input_dims
 
     def __init__(self):
         self.dim_selection_strat = LargestFirstDimSelection()

@@ -10,8 +10,8 @@ class FGSM(ModFGSM):
                 parent))
 
     @classmethod
-    def evaluate_args(cls, args, v):
-        v["granularity"] = args["granularity"]
+    def evaluate_args(cls, args, v, errors):
+        v["granularity"] = args.get("granularity")
 
     def __init__(self, fallback_strategy=None, fallback_predicate=lambda region: False):
         super().__init__(fallback_strategy=fallback_strategy, fallback_predicate=fallback_predicate)

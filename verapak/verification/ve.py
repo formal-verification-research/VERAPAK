@@ -4,7 +4,7 @@ class VerificationEngine:
         return []
 
     @classmethod
-    def evaluate_args(cls, args, v):
+    def evaluate_args(cls, args, v, errors):
         return {}
 
     def verification_impl(self, region, safety_predicate):

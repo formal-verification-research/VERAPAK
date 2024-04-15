@@ -40,13 +40,13 @@ class ModFGSM(AbstractionEngine):
         }]
 
     @classmethod
-    def evaluate_args(cls, args, v):
+    def evaluate_args(cls, args, v, errors):
         v["balance_factor"] = args["balance_factor"]
-        v["granularity"] = args["granularity"]
+        v["granularity"] = args.get("granularity")
         v["strategy"]["dimension_ranking"] = args["dimension_ranking_strategy"]()
 
         # Reshape and compute each strategy's optional arguments
-        v["strategy"]["dimension_ranking"].evaluate_args(args, v)
+        v["strategy"]["dimension_ranking"].evaluate_args(args, v, errors)
 
 
     def __init__(self, fallback_strategy=None, fallback_predicate=lambda region: False):

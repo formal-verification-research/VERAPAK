@@ -139,5 +139,13 @@
         "none"
       ]
     }
+  },
+  {
+    "name": "no-color",
+    "arg_params": {
+      "help": "If not given, colorize the output (currently only implemented for errors)",
+      "action": "store_false",
+      "dest": "color"
+    }
   }
 ]

@@ -3,7 +3,7 @@ import sys
 import traceback
 import numpy as np
 
-from config import Config
+from config import Config, ConfigError
 from verapak.parse_args.tools import parse_args
 from algorithm import main
 from verapak.utilities.sets import Reporter, DoneInterrupt
@@ -74,12 +74,16 @@ if __name__ == "__main__":
         print(f"\033[38;2;255;0;0mERROR: {config['error']}\033[0m")
         write_results(config, None, "error_" + config["error"], 0, None)
     else:
-        config = Config(config)
-        for strategy in config["strategy"].values():
-            strategy.set_config(config)
+        try:
+            config = Config(config)
+        except ConfigError as ex:
+            print(ex)
+        else: # Valid Config
+            for strategy in config["strategy"].values():
+                strategy.set_config(config)
 
-        run(config)
+            run(config)
 
-        for strategy in config["strategy"].values():
-            strategy.shutdown()
+            for strategy in config["strategy"].values():
+                strategy.shutdown()
 

@@ -4,7 +4,7 @@ class DimensionRankingEngine:
         return []
 
     @classmethod
-    def evaluate_args(cls, v):
+    def evaluate_args(cls, args, v, errors):
         return v
 
     def rank_indices_impl(self, region):

@@ -13,8 +13,8 @@ class RFGSM(ModFGSM):
         return [*non_strat, strat]
 
     @classmethod
-    def evaluate_args(cls, args, v):
-        super().evaluate_args(args, v)
+    def evaluate_args(cls, args, v, errors):
+        super().evaluate_args(args, v, errors)
 
     def __init__(self):
         def fallback_predicate(region):

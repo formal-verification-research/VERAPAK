@@ -23,7 +23,7 @@ class ERAN(VerificationEngine):
         }]
 
     @classmethod
-    def evaluate_args(cls, args, v):
+    def evaluate_args(cls, args, v, errors):
         v["eran_timeout"] = args["eran_timeout"]
         if v["eran_timeout"] < 0:
             v["eran_timeout"] = -v["eran_timeout"] / v["timeout"]

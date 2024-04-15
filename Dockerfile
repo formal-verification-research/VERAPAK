@@ -12,12 +12,12 @@ RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_
 
 RUN apt-get install -y cmake
 
-ADD . /src
+ADD . /src/VERAPAK
 
-RUN pip list
+RUN mkdir /src/VERAPAK/_build && cd /src/VERAPAK/_build && cmake .. && make install -j12
 
-RUN mkdir /src/_build && cd /src/_build && cmake .. && make install -j12
+RUN mv /src/VERAPAK/docker.bashrc /root/.bashrc
 
-WORKDIR /src
+WORKDIR /root
 
 

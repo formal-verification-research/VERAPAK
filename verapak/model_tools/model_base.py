@@ -28,6 +28,6 @@ def load_graph_by_type(graph_path, graph_type):
     elif graph_type == "KERAS":
         # TODO
         pass
-    else:
-        raise NotImplementedError(
-            f"Graph type {graph_type} is not implemented")
+
+    raise NotImplementedError(
+        f"Graph type {graph_type} is not implemented")

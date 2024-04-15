@@ -4,8 +4,8 @@ class PartitioningEngine:
         return []
 
     @classmethod
-    def evaluate_args(cls, v):
-        return v
+    def evaluate_args(cls, args, v, errors):
+        pass
 
     def partition_impl(self, region):
         raise NotImplementedError(
