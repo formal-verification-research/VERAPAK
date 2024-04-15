@@ -1,0 +1,30 @@
+CONF IN:
+graph :: vnncomptests/cifar2020/nets/cifar10_8_255_simplified.onnx
+vnnlib :: vnncomptests/cifar2020/specs/cifar10_spec_idx_10_eps_0.03137_n1.vnnlib
+abstraction_strategy :: rfgsm
+verification_strategy :: eran
+
+COMMAND:
+docker exec -it verapak python3 algorithm.py --config_file=test_d.conf --output_dir="/src/out" --timeout 0 --halt_on_first loose
+
+OUTPUT:
+Loop
+Proving with ERAN in Docker
+Docker exited
+Disproving with ERAN in Docker
+Docker exited
+Some UNSAFE
+unknown => some_unsafe (1.0)
+Saving time to '/src/out/time_to_first.txt'
+
+
+Final Report
+#############################
+@ 17.699056148529053
+Percent unknown: 0.0%
+Percent known safe: 0.0%
+Percent known unsafe: 0.0%
+Percent partially unsafe: 100.0%
+Adversarial examples: 0
+
+done

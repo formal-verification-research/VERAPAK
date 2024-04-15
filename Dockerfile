@@ -17,6 +17,7 @@ ADD . /src/VERAPAK
 RUN mkdir /src/VERAPAK/_build && cd /src/VERAPAK/_build && cmake .. && make install -j12
 
 RUN mv /src/VERAPAK/docker.bashrc /root/.bashrc
+RUN mv /src/VERAPAK/examples /root
 
 WORKDIR /root
 
