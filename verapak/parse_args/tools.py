@@ -86,7 +86,7 @@ class FileParser:
                 if "::" not in line:
                     raise ValueError(
                         f"Key/value separator \"::\" not found on line {line_num}")
-                key = line.split("::", 1)[0].strip()
+                key = line.split("::", 1)[0].lower().strip().replace(" ", "_").replace("-", "_")
                 value = line.split("::", 1)[1].strip()
                 if not key in self.arg_dict:
                     raise ValueError(
