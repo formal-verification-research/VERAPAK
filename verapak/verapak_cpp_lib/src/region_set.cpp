@@ -2,33 +2,15 @@
 #include "numpy_helpers.hpp"
 
 bool operator<(grid::point const &p, grid::region const &r) {
-  for (auto i = 0u; i < p.size(); ++i) {
-    if (p[i] < r[i].first)
-      return true;
-    if (p[i] >= r[i].second)
-      return false;
-  }
-  return false;
+  return p < r.first;
 }
 
 bool operator<(grid::region const &r, grid::point const &p) {
-  for (auto i = 0u; i < p.size(); ++i) {
-    if (r[i].second <= p[i])
-      return true;
-    if (r[i].first > p[i])
-      return false;
-  }
-  return false;
+  return r.second < p;
 }
 
 bool operator<(grid::region const &r1, grid::region const &r2) {
-  for (auto i = 0u; i < r1.size(); ++i) {
-    if (r1[i].second <= r2[i].first)
-      return true;
-    if (r1[i].first >= r2[i].second)
-      return false;
-  }
-  return false;
+  return r1.second <= r2.first;
 }
 
 bool operator<(grid::point const &p1, grid::point const &p2) {
@@ -85,15 +67,10 @@ python::tuple RegionSet::pop_random() {
   if (region_set_internal.empty()) {
     return python::make_tuple(false, python::object());
   }
-  std::print("A")
   auto iter = region_set_internal.begin(); 
-  std::print("B")
   std::advance(iter, rand() % region_set_internal.size());
-  std::print("C")
   auto python_region = regionPairToPointPairAndAttributes(*iter);
-  std::print("D")
   region_set_internal.erase(iter);
-  std::print("E")
   return python::make_tuple(true, python_region);
 }
 

@@ -15,10 +15,11 @@ namespace numpy = boost::python::numpy;
 namespace grid {
 struct region_less_compare;
 using numeric_type_t = double;
-using region_element = std::pair<numeric_type_t, numeric_type_t>;
-using region = std::vector<region_element>;
-using region_pair = std::pair<const region&, const python::tuple&>;
 using point = std::vector<numeric_type_t>;
+//using region_element = std::pair<numeric_type_t, numeric_type_t>;
+//using region = std::vector<region_element>;
+using region = std::pair<point, point>;
+using region_pair = std::pair<region, python::tuple>;
 } // namespace grid
 
 bool operator<(grid::point const &, grid::region const &);

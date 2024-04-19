@@ -1,4 +1,5 @@
 #include "numpy_helpers.hpp"
+#include <iostream>
 
 grid::point numpyArrayToPoint(numpy::ndarray const &in) {
   numpy::ndarray flat_in = in.reshape(python::make_tuple(-1));
@@ -39,35 +40,16 @@ grid::region_pair pointPairAndAttributesToRegionPair(numpy::ndarray const &lower
       flat_lower.astype(numpy::dtype::get_builtin<grid::numeric_type_t>());
   flat_upper =
       flat_upper.astype(numpy::dtype::get_builtin<grid::numeric_type_t>());
-  auto *begin_lower =
-      reinterpret_cast<grid::numeric_type_t *>(flat_lower.get_data());
-  auto *begin_upper =
-      reinterpret_cast<grid::numeric_type_t *>(flat_upper.get_data());
-  grid::region retVal;
-  retVal.reserve(size_lower);
-  for (auto i = 0u; i < size_lower; ++i) {
-    auto lower = begin_lower[i];
-    auto upper = begin_upper[i];
-    if (lower > upper) {
-      PyErr_SetString(PyExc_TypeError,
-                      "Lower bound is greater than upper bound");
-      python::throw_error_already_set();
-    }
-    retVal.push_back({lower, upper});
+  auto region = std::make_pair(numpyArrayToPoint(lower), numpyArrayToPoint(upper));
+  if (region.first > region.second) {
+    PyErr_SetString(PyExc_TypeError, "Lower bound is greater than upper bound");
+    python::throw_error_already_set();
   }
-  return std::make_pair(retVal, attributes);
+  return std::make_pair(region, attributes);
 }
 
 python::tuple regionPairToPointPairAndAttributes(grid::region_pair const &in) {
-  grid::point lower;
-  lower.reserve(in.first.size());
-  grid::point upper;
-  upper.reserve(in.first.size());
-  for (auto &&pair : in.first) {
-    lower.push_back(pair.first);
-    upper.push_back(pair.second);
-  }
-  auto numpy_lower = pointToNumpyArray(lower);
-  auto numpy_upper = pointToNumpyArray(upper);
+  auto numpy_lower = pointToNumpyArray(in.first.first);
+  auto numpy_upper = pointToNumpyArray(in.first.second);
   return python::make_tuple(numpy_lower, numpy_upper, in.second);
 }
