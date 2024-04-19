@@ -24,7 +24,7 @@ echo -e "\033[39m"
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
-PS1="\[\e[38;5;82m\e[1m\]verapak-docker\[\e[m\] \]\e[33m\]\w\[\e[m\] > "
+PS1="\[\e[38;5;82m\e[1m\]verapak-docker\[\e[m\] \[\e[33m\]\w\[\e[m\] > "
 
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
