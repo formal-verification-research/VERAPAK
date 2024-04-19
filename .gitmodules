@@ -1,0 +1,6 @@
+[submodule "eran"]
+	path = eran
+	url = https://github.com/yodarocks1/eran
+[submodule "ml_constraints"]
+	path = ml_constraints
+	url = https://github.com/yodarocks1/ml_constraints.git
