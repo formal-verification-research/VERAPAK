@@ -1,6 +1,6 @@
-import constraint_utils
+from ml_constraints import Constraints
 from eran import ERAN
-from read_net_file import read_onnx_net
+from eran.read_net_file import read_onnx_net
 import numpy as np
 import tensorflow as tf
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     eran = createERANInstance(sys.argv[1])
     specLB = np.array(sys.argv[2].replace('[','').replace(']','').split(','))
     specUB = np.array(sys.argv[3].replace('[','').replace(']','').split(','))
-    constraints = constraint_utils.get_constraints_from_file(sys.argv[4])
+    constraints = Constraints.from_constraints_file(sys.argv[4])
     percent, nn, nlb, nub, _, _ = eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, constraints)
     print(percent)
 

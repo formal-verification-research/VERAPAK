@@ -20,7 +20,7 @@ ADD https://github.com/yodarocks1/eran.git /src/eran/
 WORKDIR /src/eran
 RUN if [ -z "$USE_GPU" ]; then ./install.sh; else ./install.sh --use-cuda; fi
 RUN bash -c "source ./gurobi_setup_path.sh"
-ENV PYTHONPATH="/src/eran/ELINA/python_interface/:/src/eran/deepg/code/:/src/eran/tf_verify/"
+ENV PYTHONPATH="/src/eran/python_interface/"
 
 RUN rm /root/.bashrc
 ADD . /src/VERAPAK

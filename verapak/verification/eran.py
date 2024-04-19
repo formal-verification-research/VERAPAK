@@ -1,6 +1,6 @@
 import math
 from .ve import *
-from eran_verify import createERANInstance
+from eran import ERAN_factory
 
 class ERAN(VerificationEngine):
     @classmethod
@@ -37,7 +37,7 @@ class ERAN(VerificationEngine):
 
     def set_config(self, v):
         self.graph_path = v["graph"].get_path()
-        self.eran = createERANInstance(self.graph_path)
+        self.eran = ERAN_factory(self.graph_path)
         self.safety_predicate = v["safety_predicate"]
         self.timeout = v["eran_timeout"]
 
@@ -45,5 +45,4 @@ class ERAN(VerificationEngine):
     def shutdown(self):
         self.container.stop()
         self.container.remove(v=True)
-
 
