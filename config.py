@@ -133,7 +133,7 @@ class ConfigError(Exception):
 class Config(dict):
     def __init__(self, config_in):
         self.raw = config_in
-        self.dict = evaluate_args(config_in)
+        super().__init__(**evaluate_args(config_in))
     def to_binary(self):
         pass
 

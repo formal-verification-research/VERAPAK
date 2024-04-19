@@ -15,7 +15,9 @@ $(cd /src/VERAPAK && git fetch > /dev/null 2>&1)
 verapak_behind_count=$(cd /src/VERAPAK && git rev-list --count HEAD..@{u})
 
 if [ "$verapak_behind_count" -gt "0" ]; then
-    echo "Your version of verapak is $verapak_behind_count commits behind"
+    echo ""
+    echo "Your version of VeRAPAk is $verapak_behind_count commit(s) behind!"
+    echo "    Update to the most recent version using `docker pull yodarocks1/verapak:latest`"
 fi
 
 echo -e "\033[39m"
