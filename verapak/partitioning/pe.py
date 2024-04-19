@@ -11,7 +11,7 @@ class PartitioningEngine:
         raise NotImplementedError(
             "PartitioningEngine does not implement partition_impl(region)")
 
-    def set_config(self, config, data):
+    def set_config(self, v):
         pass # Do nothing with the config by default
 
     def shutdown(self):

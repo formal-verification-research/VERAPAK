@@ -41,8 +41,3 @@ class ERAN(VerificationEngine):
         self.safety_predicate = v["safety_predicate"]
         self.timeout = v["eran_timeout"]
 
-
-    def shutdown(self):
-        self.container.stop()
-        self.container.remove(v=True)
-
