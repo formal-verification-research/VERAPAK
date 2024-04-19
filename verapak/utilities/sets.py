@@ -110,7 +110,7 @@ class Reporter:
     
     def report_status(self):
         elapsed_time = time.time() - self.last_report
-        if elapsed_time < self.config['raw']['report_interval_seconds']:
+        if elapsed_time < self.config.raw['report_interval_seconds']:
             return False
         self.do_report_status()
         return True
