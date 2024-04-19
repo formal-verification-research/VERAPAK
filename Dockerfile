@@ -24,6 +24,7 @@ ENV PYTHONPATH="/src/eran/python_interface/"
 
 RUN rm /root/.bashrc
 ADD . /src/VERAPAK
+RUN sed -i -e 's/\.numpy/\.eval/g' /onnx-tensorflow/onnx_tf/backend_rep.py
 RUN cd /src/VERAPAK && git remote set-url origin https://github.com/formal-verification-research/VERAPAK.git
 RUN ln /src/VERAPAK/docker.bashrc /root/.bashrc
 RUN ln -s /src/VERAPAK/examples /root/examples

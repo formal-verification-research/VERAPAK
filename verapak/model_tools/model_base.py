@@ -1,3 +1,5 @@
+import numpy as np
+
 class ModelBase:
     def __init__(self, model, input_shape, output_shape, input_dtype, output_dtype):
         self.model_internal = model
@@ -10,10 +12,10 @@ class ModelBase:
         raise NotImplementedError()
 
     def _cast_point_input(self, point):
-        return point.reshape(self.input_shape).astype(self.input_dtype)
+        return np.array(point).reshape(self.input_shape).astype(self.input_dtype)
 
     def _cast_point_output(self, point):
-        return point.reshape(self.output_shape).astype(self.output_dtype)
+        return np.array(point).reshape(self.output_shape).astype(self.output_dtype)
 
     def evaluate(self, point):
         raise NotImplementedError(

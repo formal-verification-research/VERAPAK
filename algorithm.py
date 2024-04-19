@@ -47,8 +47,11 @@ def main(config, reporter):
             # If both are empty, we're done!
             break
 
-        region[0] = region[0].reshape(config['graph'].input_shape).astype(config['graph'].input_dtype)
-        region[1] = region[1].reshape(config['graph'].input_shape).astype(config['graph'].input_dtype)
+        region = (
+            region[0].reshape(config['graph'].input_shape).astype(config['graph'].input_dtype),
+            region[1].reshape(config['graph'].input_shape).astype(config['graph'].input_dtype),
+            region[2]
+        )
         region_area = reporter.get_area(region)
 
         if ((region[1] - region[0]) <= 0).any(): # NOTE: Only necessary for UNKNOWN
