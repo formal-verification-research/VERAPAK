@@ -69,10 +69,10 @@ def type_string_to_type(type_):
         return numArrayType
     elif type_ == "x_num_array":
         return xNumArrayType
+    elif hasattr(type_, "__call__"):
+        return type_
     elif type_.startswith("strategy:"):
         category = type_.split(":")[1]
         return strategyType(category)
-    elif hasattr(type_, "__call__"):
-        return type_
     else:
         raise ValueError(f"Bad arg type {type_}")
