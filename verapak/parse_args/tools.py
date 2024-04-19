@@ -6,10 +6,12 @@ from pathlib import Path
 from verapak.parse_args import strategy_registry
 from verapak.utilities.vnnlib_lib import VNNLib, NonMaximalVNNLibError
 from verapak.parse_args.types import type_string_to_type
+from config import ConfigValueError
 
 ARGS_PATH = Path(__file__).parent / "args.json"
 SUPPORTED_ARGUMENTS = json.load(ARGS_PATH.open())
 
+colorize = "--no-color" not in sys.argv
 
 def parse_cmdline_args(args, prog):
     parser = argparse.ArgumentParser(
@@ -19,7 +21,13 @@ def parse_cmdline_args(args, prog):
             arg["arg_params"]["type"] = type_string_to_type(arg["arg_params"]["type"])
         parser.add_argument(f"--{arg['name']}", **arg['arg_params'])
     add_per_strategy_groups(parser, prog)
-    return parser.parse_args(args)
+    try:
+        return parser.parse_args(args)
+    except ConfigValueError as ex:
+        ex.set_key("Command Line")
+        if colorize:
+            ex.colorize()
+        raise ex
 
 def get_strategy_groups_supported():
     supported = list()
@@ -84,13 +92,17 @@ class FileParser:
                 if len(line.strip()) == 0:
                     continue
                 if "::" not in line:
-                    raise ValueError(
-                        f"Key/value separator \"::\" not found on line {line_num}")
+                    raise ConfigValueError(
+                        f"Key/value separator \"::\" not found on line {line_num}",
+                        key="Config File",
+                        path=f"{self.config_file} : Line {line_num}")
                 key = line.split("::", 1)[0].lower().strip().replace(" ", "_").replace("-", "_")
                 value = line.split("::", 1)[1].strip()
                 if not key in self.arg_dict:
-                    raise ValueError(
-                        f'unsupported argument "{key}" on line "{line_num}"')
+                    raise ConfigValueError(
+                        f'unsupported argument "{key}" on line "{line_num}"',
+                        key="Config File",
+                        path=f"{self.config_file} : Line {line_num}")
                 result[key] = type_string_to_type(self.arg_dict[key]['type'])(value)
 
             return result
@@ -108,21 +120,24 @@ def parse_file_args(config_file):
     return FileParser(config_file, SUPPORTED_ARGUMENTS).parse_file()
 
 def parse_vnnlib_args(vnnlib_file):
-    vnn = VNNLib(vnnlib_file)
-    domain = vnn.get_domain()
-    return {
-            "initial_point": vnn.get_centerpoint().tolist(),
-            "label": vnn.get_intended_class(),
-            "radius": vnn.get_radii().tolist(),
-            "domain_lower_bound": domain[0],
-            "domain_upper_bound": domain[1]
-    }
+    try:
+        vnn = VNNLib(vnnlib_file)
+        domain = vnn.get_domain()
+        return {
+                "initial_point": vnn.get_centerpoint().tolist(),
+                "label": vnn.get_intended_class(),
+                "radius": vnn.get_radii().tolist(),
+                "domain_lower_bound": domain[0],
+                "domain_upper_bound": domain[1]
+        }
+    except NonMaximalVNNLibError as ex:
+        raise ConfigValueError(ex.args[0] + " : NonMaximal", key="VNNLib File", path=vnnlib_file)
 
 
 def combine_args(supported_args, *arg_sets):
     """ Combine args with priority from first in the list to last in the list """
     base_dict = arg_sets[0]
-    sup_arg_dict = {arg['name']: arg['arg_params'] for arg in supported_args}
+    sup_arg_dict = {arg['arg_params'].get('dest', arg['name']): arg['arg_params'] for arg in supported_args}
     for i in range(1,len(arg_sets)):
         this_dict = arg_sets[i]
         if this_dict is None:
@@ -144,15 +159,25 @@ def combine_args(supported_args, *arg_sets):
 def parse_args(args, prog):
     try:
         cmd_args = parse_cmdline_args(args, prog)
-    except ValueError as e:
-        print(e.args)
+    except ConfigValueError as ex:
+        if colorize:
+            ex.colorize()
+        print(ex)
+        setattr(cmd_args, "error", "bad_cmd_args")
+    except ValueError as ex:
+        print(ex.args)
         setattr(cmd_args, "error", "bad_cmd_args")
 
     if hasattr(cmd_args, "config_file") and cmd_args.config_file is not None:
         try:
             file_args = parse_file_args(cmd_args.config_file)
-        except ValueError as e:
-            print(e.args)
+        except ConfigValueError as ex:
+            if colorize:
+                ex.colorize()
+            print(ex)
+            file_args = {"error": "bad_config_args"}
+        except ValueError as ex:
+            print(ex.args)
             file_args = {"error": "bad_config_args"}
     else:
         file_args = None
@@ -164,7 +189,7 @@ def parse_args(args, prog):
             vnnlib_args = parse_vnnlib_args(file_args["vnnlib"])
         else:
             vnnlib_args = None
-    except NonMaximalVNNLibError as e:
+    except NonMaximalVNNLibError as ex:
         vnnlib_args = {"error": "nonmaximal"}
     except:
         vnnlib_args = {"error": "bad_vnnlib_args"}

@@ -3,6 +3,40 @@ from verapak import snap
 from verapak.constraints import SafetyPredicate, Constraints
 from verapak.model_tools.model_base import load_graph_by_type
 
+class ConfigValueError(Exception):
+    def __init__(self, message, path=None, key=None):
+        self.message = message
+        self.path = path
+        self.key = key
+        self.use_color = False
+    def set_key(self, key):
+        self.key = key
+    def colorize(self, use_color=True, colors=(9, 14, 219)):
+        if use_color is not None:
+            self.use_color = use_color
+        self.colors = colors
+        return self
+    def _color(self, i):
+        if not self.use_color:
+            return ""
+        return f"\033[38;5;{self.colors[i]}m"
+    def _no_color(self):
+        if not self.use_color:
+            return ""
+        return f"\033[39m"
+    def __str__(self):
+        no_color = self._no_color()
+        error_color = self._color(0)
+        key_color = self._color(1)
+        special_color = self._color(2)
+        s = ""
+        if self.key is not None:
+            s += f"{key_color}{self.key}{no_color}: "
+        s += f"{error_color}{self.message}{no_color}"
+        if self.path is not None:
+            s += f"\n    Path: {special_color}{self.path}{no_color}"
+        return s
+
 class ConfigError(Exception):
     REASON_MISSING = "missing"
     REASON_INVALID = "invalid"

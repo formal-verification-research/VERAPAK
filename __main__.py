@@ -72,7 +72,7 @@ if __name__ == "__main__":
     config = parse_args(sys.argv[1:], prog=sys.argv[0])
     if "error" in config:
         print(f"\033[38;2;255;0;0mERROR: {config['error']}\033[0m")
-        write_results(config, None, "error_" + config["error"], 0, None)
+        write_results(config, None, "error_" + config["error"], 0)
     else:
         try:
             config = Config(config)
