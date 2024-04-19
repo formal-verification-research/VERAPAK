@@ -1,6 +1,3 @@
-import sys
-sys.path.insert(0, '../ELINA/python_interface/')
-sys.path.insert(0, '../deepg/code/')
 import constraint_utils
 from eran import ERAN
 from read_net_file import read_onnx_net
@@ -36,11 +33,6 @@ if __name__ == "__main__":
     specLB = np.array(sys.argv[2].replace('[','').replace(']','').split(','))
     specUB = np.array(sys.argv[3].replace('[','').replace(']','').split(','))
     constraints = constraint_utils.get_constraints_from_file(sys.argv[4])
-    hold, nn, nlb, nub, _, _ = eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, constraints)
-    if hold:
-        print('sat')
-        sys.exit(0)
-    else:
-        print('unsat')
-        sys.exit(0)
+    percent, nn, nlb, nub, _, _ = eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, constraints)
+    print(percent)
 

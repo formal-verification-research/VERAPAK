@@ -1,4 +1,5 @@
 FROM tensorflow/tensorflow:2.5.0
+ARG USE_GPU=""
 
 RUN apt-get update && apt-get install -y git wget && pip install -U pip
 
@@ -11,11 +12,21 @@ RUN git clone --depth 1 --branch v1.9.0 https://github.com/onnx/onnx-tensorflow.
 RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz && tar -xvzf boost_1_77_0.tar.gz && cd boost_1_77_0 && ./bootstrap.sh --with-python=python3 --with-libraries=python,system && ./b2 install
 
 RUN apt-get install -y cmake
+RUN apt-get -y install m4 autoconf libtool texlive-latex-base
+RUN apt-get -y install vim
+COPY githubKey /root/.ssh/known_hosts
+
+ADD https://github.com/yodarocks1/eran.git /src/eran/
+WORKDIR /src/eran
+RUN if [ -z "$USE_GPU" ]; then ./install.sh; else ./install.sh --use-cuda; fi
+RUN bash -c "source ./gurobi_setup_path.sh"
+ENV PYTHONPATH="/src/eran/ELINA/python_interface/:/src/eran/deepg/code/:/src/eran/tf_verify/"
 
 RUN rm /root/.bashrc
 ADD . /src/VERAPAK
 RUN ln /src/VERAPAK/docker.bashrc /root/.bashrc
 RUN ln -s /src/VERAPAK/examples /root/examples
+RUN cat /src/VERAPAK/githubKey >> /root/.ssh/known_hosts
 
 RUN mkdir /src/VERAPAK/_build && cd /src/VERAPAK/_build && cmake .. && make install -j12
 

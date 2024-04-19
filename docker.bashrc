@@ -8,9 +8,18 @@ echo "     \/ \___|_|  \__/    \___| /_/    \___|\_\ "
 echo -e "\033[22m"
 echo "Alias: verapak == python /src/VERAPAK"
 echo "       Call 'verapak' for usage"
-echo -e "\033[39m"
 
 alias verapak='python /src/VERAPAK'
+
+$(cd /src/VERAPAK && git fetch > /dev/null 2>&1)
+verapak_behind_count=$(cd /src/VERAPAK && git rev-list --count HEAD..@{u})
+
+if [ "$verapak_behind_count" -gt "0" ]; then
+    echo "Your version of verapak is $verapak_behind_count commits behind"
+fi
+
+echo -e "\033[39m"
+
 
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return

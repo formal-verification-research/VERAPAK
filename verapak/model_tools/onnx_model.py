@@ -8,6 +8,7 @@ import numpy as np
 
 class ONNXModel(ModelBase):
     def __init__(self, path):
+        self.path = path
         onnx_model = onnx.load(path)
         input_shape = get_onnx_input_shape(onnx_model)
         output_shape = get_onnx_output_shape(onnx_model)
@@ -21,6 +22,9 @@ class ONNXModel(ModelBase):
                          output_shape, input_dtype, output_dtype)
         self.model_internal.tensor_dict = self.model_internal.tf_module.gen_tensor_dict(
             {self.model_internal.inputs[0]: self._cast_point_input(np.zeros(self.input_shape))})
+
+    def get_path(self):
+        return self.path
 
     def evaluate(self, point):
         return self.model_internal.run(self._cast_point_input(point))[0]

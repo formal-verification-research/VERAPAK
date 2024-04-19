@@ -6,6 +6,9 @@ class ModelBase:
         self.input_dtype = input_dtype
         self.output_dtype = output_dtype
 
+    def get_path(self):
+        raise NotImplementedError()
+
     def _cast_point_input(self, point):
         return point.reshape(self.input_shape).astype(self.input_dtype)
 
