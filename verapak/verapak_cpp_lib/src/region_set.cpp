@@ -85,10 +85,15 @@ python::tuple RegionSet::pop_random() {
   if (region_set_internal.empty()) {
     return python::make_tuple(false, python::object());
   }
+  std::print("A")
   auto iter = region_set_internal.begin(); 
+  std::print("B")
   std::advance(iter, rand() % region_set_internal.size());
+  std::print("C")
   auto python_region = regionPairToPointPairAndAttributes(*iter);
+  std::print("D")
   region_set_internal.erase(iter);
+  std::print("E")
   return python::make_tuple(true, python_region);
 }
 
