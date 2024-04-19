@@ -163,9 +163,11 @@ def parse_args(args, prog):
         if colorize:
             ex.colorize()
         print(ex)
+        cmd_args = type('', (), {})()
         setattr(cmd_args, "error", "bad_cmd_args")
     except ValueError as ex:
         print(ex.args)
+        cmd_args = type('', (), {})()
         setattr(cmd_args, "error", "bad_cmd_args")
 
     if hasattr(cmd_args, "config_file") and cmd_args.config_file is not None:
