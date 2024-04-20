@@ -19,6 +19,8 @@ jobs:
       contents: read
       #packages: write
 
+    environment: Docker
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,7 +30,7 @@ jobs:
           #registry: ${{ env.REGISTRY }}
           #username: ${{ github.actor }}
           #password: ${{ secrets.GITHUB_TOKEN }}
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: yodarocks1
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
