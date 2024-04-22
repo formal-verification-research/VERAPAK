@@ -94,7 +94,6 @@ def verify(config, region, area, sets, from_=UNKNOWN):
     elif verification == UNKNOWN or verification == TOO_BIG:
         partitions = config['strategy']['partitioning'].partition_impl(region)
         for partition in partitions:
-            inherit_data(config, region, partition)
             falsify(config, partition, sets['reporter'].get_area(partition), sets, from_=from_)
 
 def falsify(config, region, area, sets, from_=UNKNOWN):
@@ -123,16 +122,6 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
     else:
         # All abstracted points were safe
         sets[UNKNOWN](region, area, from_=from_)
-
-def inherit_data(config, parent, child):
-    parent_data = parent[2]
-    child_data = config["graph"].evaluate(child)
-    if len(parent_data) == 0:
-        child[2] = (child_data,)
-    elif len(parent_data) == 1:
-        child[2] = (parent_data[0], child_data)
-    else:
-        child[2] = (parent_data[-2], parent_data[-1], child_data)
 
 
 TREND_EPSILON = 0.01
