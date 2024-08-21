@@ -31,8 +31,20 @@ def load_graph_by_type(graph_path, graph_type):
         from .onnx_model import ONNXModel
         return ONNXModel(graph_path)
     elif graph_type == "KERAS":
-        # TODO
-        pass
+        from .keras_model import KerasModel
+        return KerasModel(graph_path)
+    #elif graph_type == "PT":
+    #    from .pytorch_model import PyTorchModel
+    #    return PyTorchModel(graph_path)
 
     raise NotImplementedError(
         f"Graph type {graph_type} is not implemented")
+
+def output_to_loss(output, label_tf):
+    max_out = np.max(output.numpy())
+    max_in = np.min(output.numpy())
+    from_logits = max_out > 1 or min_out < 0
+    loss = tf.losses.categorical_crossentropy(
+        label_tf, output, from_logits=from_logits)
+    return loss
+

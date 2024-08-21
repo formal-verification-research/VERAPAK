@@ -19,7 +19,6 @@ def enumerateAllRegions(partition, region, dim_index, sorted_indices, original_r
 def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divisor):
     sorted_indices = dim_select_strategy(region)
     retVal = [Region(region[0].copy(), region[1].copy(), region[2])]
-#    firstRegion = [region[0].copy(), region[1].copy()]
     for i in range(num_dims):
         curIndex = np.unravel_index(sorted_indices[i], region[0].shape)
         sizeIncrement = (region[1][curIndex] - region[0][curIndex]) / divisor
@@ -30,19 +29,14 @@ def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divis
                 r1 = r[1].copy()
                 r0[curIndex] = r0[curIndex] + (sizeIncrement * d)
                 r1[curIndex] = r0[curIndex] + sizeIncrement
-                newRetVal.append(Region(r0, r1, parent=r))
+                newRetVal.append(Region(r0, r1, None, parent=r))
         retVal = newRetVal
-#        if sizeIncrement <= 0:
-#            return []
-#        firstRegion[1][curIndex] = firstRegion[0][curIndex] + sizeIncrement
-#    enumerateAllRegions(retVal, firstRegion, 0,
-#                        sorted_indices, region, num_dims)
     return retVal
 
-def Region(lower, upper, data=None, parent=None):
+def Region(lower, upper, datum, data=None, parent=None):
     if data is None and parent is None:
-        data = ()
+        data = (None, None, None)
     elif data is None:
-        data = parent[2]
-    return (lower, upper, data)
+        data = parent[2][:2]
+    return (lower, upper, (datum, *data))
 

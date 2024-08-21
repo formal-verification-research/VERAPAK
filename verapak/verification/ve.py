@@ -7,6 +7,16 @@ class VerificationEngine:
     def evaluate_args(cls, args, v, errors):
         return {}
 
+    USES_CACHE = False
+
+    def verify(self, region, safety_predicate, use_cache=True):
+        if use_cache and region[2][0] is not None:
+            return from_cache(region[2][0])
+        return self.verification_impl(region, safety_predicate)
+
+    def save_cache(self, region, data):
+        region[2][0] = data
+
     def verification_impl(self, region, safety_predicate):
         raise NotImplementedError("VerificationEngine did not implement verification_impl(region, safety_predicate)")
 

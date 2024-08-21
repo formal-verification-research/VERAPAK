@@ -2,8 +2,8 @@ from .model_base import *
 import tensorflow as tf
 import numpy as np
 
-
-class KerasModel(ModelBase):
+# TODO
+class PyTorchModel(ModelBase):
     def __init__(self, path):
         self.path = path
         keras_model = tf.keras.models.load_model(path)

@@ -37,6 +37,8 @@ class DiscreteSearch(VerificationEngine):
             else:
                 v["granularity"] = np.array(v["granularity"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
 
+    USES_CACHE = False
+
     def __init__(self):
         self.discrete_point_generator = enumerate_valid_points
 
@@ -56,10 +58,12 @@ class DiscreteSearch(VerificationEngine):
             for point in points:
                 c += 1
                 if not safety_predicate(point):
+                    self.save_cache(region, False)
                     if len(points) == 1:
                         return ALL_UNSAFE, point
                     return SOME_UNSAFE, point
             print(f"Size: {c}")
+            self.save_cache(region, True)
             return ALL_SAFE, None
         except RecursionError: # Tried to process something too big
             return TOO_BIG, None

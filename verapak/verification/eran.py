@@ -21,13 +21,19 @@ class ERAN(VerificationEngine):
             v["eran_timeout"] = -v["eran_timeout"] / v["timeout"]
         v["eran_timeout"] = math.ceil(v["eran_timeout"])
 
+    USES_CACHE = True
+
     def __init__(self):
         pass
 
     def verification_impl(self, region, safety_predicate):
-        specLB = region[0]
-        specUB = region[1]
-        percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, safety_predicate.constraints)
+        if region[2][0] is not None:
+            percent = region[2][0]
+        else:
+            specLB = region[0]
+            specUB = region[1]
+            percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, safety_predicate.constraints)
+            self.save_cache(region, percent)
         if percent == 1:
             return ALL_SAFE, None
         elif percent == 0:

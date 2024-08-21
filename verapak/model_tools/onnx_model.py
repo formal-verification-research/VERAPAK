@@ -32,13 +32,9 @@ class ONNXModel(ModelBase):
     def gradient_of_loss_wrt_input(self, point, label):
         label_tf = tf.constant(self._cast_point_output(label))
         in_tf = tf.Variable(self._cast_point_input(point))
-        with tf.GradientTape() as g:
-            g.watch(in_tf)
-            output = self.model_internal.tf_module(
-                **{self.model_internal.inputs[0]: in_tf})[self.model_internal.outputs[0]]
-            max_out = np.max(output.eval())
-            min_out = np.min(output.eval())
-            from_logits = max_out > 1 or min_out < 0
-            loss = tf.losses.categorical_crossentropy(
-                label_tf, output, from_logits=from_logits)
-        return g.gradient(loss, in_tf)
+        with tf.GradientTape() as tape:
+            tape.watch(in_tf)
+            output = self.model_internal.run(in_tf)
+            loss = output_to_loss(output, label_tf)
+        return tape.gradient(loss, in_tf)
+

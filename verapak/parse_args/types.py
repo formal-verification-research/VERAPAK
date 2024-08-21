@@ -31,7 +31,8 @@ def fileType(filePath):
 
 def graphPathType(filePath):
     filePath = fileType(filePath)
-    if pathlib.Path(filePath).suffix.upper() == '.ONNX':
+    suffix = pathlib.Path(filePath).suffix.upper()
+    if suffix in ('.ONNX', ".KERAS"):
         return filePath
     raise ConfigValueError("unsupported model type", path=filePath)
 

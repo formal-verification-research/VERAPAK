@@ -127,45 +127,60 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
 TREND_EPSILON = 0.01
 RECURSION_DEPTH = 0
 TINY_SUBREGIONS = 8
-# Region[2]:
-#  0 - This %
-#  1 - Parent
-#  2 - Recursions
-#  3 - Children %
-def should_stop_partitioning(config, region, safety_predicate):
-    get_trend = lambda x: x[1][0] - x[0]
-    this = region[2]
-    parent = this[1]
+def check_boundary(config, region):
+    """
+    data[0] = This %
+    data[1] = Parent %
+    data[2] = Grandparent %
+    data[3] = Sibling %'s
+    data[4] = Recursion depth
 
-    if parent is None:
-        return False # Only the first iteration; no trend data
-    elif abs(get_trend(this)) > TREND_EPSILON:
-        return False # Making progress
+    Returns:
+        True - Should continue
+        False - Should halt
+    Prints:
+        Notification, if possible
+    """
+    data = region[2]
 
-    # Check for likeness of siblings
-    siblings = parent[3]
-    alike = True
-    for sibling in siblings:
-        if abs(sibling - parent[0]) > TREND_EPSILON:
-            alike = False
+    if data[0] is None or data[1] is None:
+        return True
+    this_trend = data[1] - data[0]
+
+    if data[2] is not None:
+        parent_trend = data[2] - data[1]
+        if abs(parent_trend) < TREND_EPSILON:
+            return True # May be temporary - previously Good Progress
+    if abs(this_trend) < TREND_EPSILON:
+        return True # Good Progress
+
+    siblings_equal = True
+    for sibling in data[3]:
+        if sibling != data[0]:
+            siblings_equal = False
             break
-
-    if not alike:
-        # Check for recursion
-        grandfather = parent[1]
-        if grandfather is None:
-            return False # Only the second iteration; no recursion trend data
-        uncles = sorted(grandfather[3])
-        siblings = sorted(siblings)
-        for i in range(len(siblings)):
-            if abs(uncles[i] - siblings[i]) > TREND_EPSILON:
-                break
+    
+    if not siblings_equal: # Recursion
+        if data[4] > RECURSION_DEPTH:
+            return False # Beyond recursion depth
         else:
-            this[2] += 1
-        if this[2] > RECURSION_DEPTH:
-            return True
-        return False # Refine the lines a little bit
+            region[2] = (data[0], data[1], data[2], data[3], data[4] + 1)
+            return True # Refine the lines
+    # Check for Too Big vs. Fuzzy & Even
+    else:
+        verification_engine = config['strategy']['verification'].verification_impl
+        region_size = region[1] - region[0]
+        for _ in range(TINY_SUBREGIONS):
+            tiny_region = np.random.random(size=len(region[0])) * region_size + region[0]
+            tiny_region = (tiny_region, tiny_region + region_size / 1000)
+            verification, adv_example = verification_engine(region, safety_predicate)
+            if abs(verification - this[0]) < TREND_EPSILON:
+                print("Very large region detected")
+                return True # Too Big
+        return False # Fuzzy & Even
 
+def handle_boundary(config, region, area, sets, from_=UNKNOWN):
+def should_stop_partitioning(config, region, safety_predicate):
     # Check for too big vs. fuzzy & even
     verification_engine = config['strategy']['verification'].verification_impl
     for _ in range(TINY_SUBREGIONS):
