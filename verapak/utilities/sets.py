@@ -120,7 +120,7 @@ class Reporter:
         for area_name in self.areas:
             area_percent = (self.areas[area_name] / self.total_area) * 100
             percent_unaccounted -= area_percent
-            print(f"Percent {area_name}: {area_percent}%")
+            print(f"Percent {DISPLAY_NAMES[area_name]}: {area_percent}%")
         print(f"Adversarial examples: {self.adversarial_examples.size()}")
         if percent_unaccounted > 0:
             print(f"Points unaccounted for: {percent_unaccounted}% (Likely due to floating point rounding)")
