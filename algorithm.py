@@ -180,6 +180,7 @@ def check_boundary(config, region):
         return False # Fuzzy & Even
 
 def handle_boundary(config, region, area, sets, from_=UNKNOWN):
+    pass
 def should_stop_partitioning(config, region, safety_predicate):
     # Check for too big vs. fuzzy & even
     verification_engine = config['strategy']['verification'].verification_impl
