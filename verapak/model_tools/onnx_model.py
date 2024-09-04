@@ -36,8 +36,8 @@ class ONNXModel(ModelBase):
             g.watch(in_tf)
             output = self.model_internal.tf_module(
                 **{self.model_internal.inputs[0]: in_tf})[self.model_internal.outputs[0]]
-            max_out = np.max(output.eval())
-            min_out = np.min(output.eval())
+            max_out = np.max(output.numpy())
+            min_out = np.min(output.numpy())
             from_logits = max_out > 1 or min_out < 0
             loss = tf.losses.categorical_crossentropy(
                 label_tf, output, from_logits=from_logits)
