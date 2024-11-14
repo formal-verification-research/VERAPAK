@@ -4,11 +4,13 @@
 VeRAPAk is an algorithmic framework for optimizing formal verification techniques for deep neural networks when it is used for verifying the local adversarial robustness property of classification problems. 
 
 
-[installation](#installation)\
+[Installation](#installation)\
 [Usage](#usage) \
 [Example](#example)\
 [Abstraction, Verification, and Partitioning Techniques](#abstraction--verification-and-partitioning-techniques) \
+[Building from source](#Building-from-source) \
 [Contact](#contact) 
+
 
 
 # Installation
@@ -257,8 +259,56 @@ Regions are partitioned by the partitioning engine which determines the number o
 </details>
 <br>
 
-# Building from source and contributions
+# Building from source
+* Ensure the following are installed
+    * python (>= 3.6)
+        * tensorflow == 2.5.0
+        * onnx-tensorlfow==1.9.0
+    * CMake
+    * m4
+    * autoconf
+    * libtool
+    * texlive-latex-base
+    * ``` sudo apt install cmake m4 autoconf libtool ```
 
+1. Build and Install ERAN verification engine
+    ```
+    git clone https://github.com/yodarocks1/eran.git /src/eran/
+    cd /src/eran
+
+    ./install.sh                    ~ No gpu acceleration
+    ./install.sh --use-cuda         ~ Gpu acceleration
+
+    bash ./gurobi_setup_path.sh
+    ENV PYTHONPATH="/src/eran/python_interface"
+    ```
+
+2. Install Boost Libraries
+    ```
+	wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz
+
+    tar -xvzf boost_1_77_0.tar.gz
+
+    cd boost_1_77_0
+
+    ./bootstrap.sh --with-python=python3 --with-libraries=python,system
+
+    ./b2 install
+    ```
+
+3. Get and Install VERAPAK
+    ```
+    mkdir /src/VERAPAK
+    cd /src/VERAPAK
+
+    git clone https://github.com/formal-verification-research/VERAPAK.git
+    
+    mkdir /src/VERAPAK/_build 
+    cd /src/VERAPAK/_build
+
+    cmake ..
+    make install -j4
+    ```
 
 # Contact
 Formal Verification Research Lab\
