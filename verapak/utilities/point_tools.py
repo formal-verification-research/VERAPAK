@@ -3,7 +3,7 @@ import math
 
 
 def point_in_region(region, point):
-    return np.all(point >= region[0]) and np.all(point < region[1])
+    return np.all(point >= region.low) and np.all(point < region.high)
 
 
 def granularity_to_array(granularity, point=None):
@@ -31,30 +31,30 @@ def is_point_valid(point, granularity, valid_point):
 
 def get_valid_point_in_region(region, granularity, valid_point):
     converted_granularity = granularity_to_array(granularity, valid_point)
-    if region[0].size != valid_point.size or converted_granularity.size != valid_point.size:
+    if region.size != valid_point.size or converted_granularity.size != valid_point.size:
         raise ValueError('region, granularity and valid point sizes do not match up: {}, {}, {}'.format(
-            region[0].size, converted_granularity.size, valid_point.size))
+            region.size, converted_granularity.size, valid_point.size))
     retVal = np.empty_like(valid_point)
     for i in range(valid_point.size):
-        reg_idx = np.unravel_index(i, region[0].shape)
+        reg_idx = np.unravel_index(i, region.shape)
         pnt_idx = np.unravel_index(i, valid_point.shape)
         gran_idx = np.unravel_index(i, converted_granularity.shape)
         multiplier = math.ceil(
-            (region[0][reg_idx] - valid_point[pnt_idx]) / converted_granularity[gran_idx])
+            (region.low[reg_idx] - valid_point[pnt_idx]) / converted_granularity[gran_idx])
         value = valid_point[pnt_idx] + \
             multiplier * converted_granularity[gran_idx]
-        if value < region[0][reg_idx]: # Below the lower bound
-            while value < region[0][reg_idx] and value < region[1][reg_idx]: # Below both the lower and upper bounds
+        if value < region.low[reg_idx]: # Below the lower bound
+            while value < region.low[reg_idx] and value < region.high[reg_idx]: # Below both the lower and upper bounds
                 multiplier += 1
                 value = valid_point[pnt_idx] + \
                         multiplier * converted_granularity[gran_idx]
-        elif value >= region[1][reg_idx]: # Above the upper bound
-            while value >= region[1][reg_idx] and value >= region[0][reg_idx]: # Above both the upper and lower bound
+        elif value >= region.high[reg_idx]: # Above the upper bound
+            while value >= region.high[reg_idx] and value >= region.low[reg_idx]: # Above both the upper and lower bound
                 multiplier -= 1
                 value = valid_point[pnt_idx] + \
                         multiplier * converted_granularity[gran_idx]
-        if not(value >= region[0][reg_idx] and value < region[1][reg_idx]): # Still out of bounds -- no interior point(s)
-            #print(f"{region[0][reg_idx]} <= {value} < {region[1][reg_idx]} failed for i={i}, reg_idx={reg_idx}\n\treg={region[0]} -> {region[1]}\n\tvalid_point={valid_point},\n\tgran={converted_granularity}")
+        if not(value >= region.low[reg_idx] and value < region.high[reg_idx]): # Still out of bounds -- no interior point(s)
+            #print(f"{region.low[reg_idx]} <= {value} < {region.high[reg_idx]} failed for i={i}, reg_idx={reg_idx}\n\treg={region.low} -> {region.high}\n\tvalid_point={valid_point},\n\tgran={converted_granularity}")
             return None
         retVal[pnt_idx] = value
     return retVal
@@ -66,14 +66,14 @@ def get_amount_valid_points(region, granularity, valid_point):
     if inside_vp is None:
         return 0
     retVal = 1
-    for i in range(region[0].size):
-        reg_idx = np.unravel_index(i, region[0].shape)
+    for i in range(region.size):
+        reg_idx = np.unravel_index(i, region.shape)
         pnt_idx = np.unravel_index(i, inside_vp.shape)
         gran_idx = np.unravel_index(i, converted_granularity.shape)
-        if region[0][reg_idx] == region[1][reg_idx]:
+        if region.low[reg_idx] == region.high[reg_idx]:
             continue
         numPointsInDim = math.ceil(
-            (region[1][reg_idx] - inside_vp[pnt_idx]) / converted_granularity[gran_idx])
+            (region.high[reg_idx] - inside_vp[pnt_idx]) / converted_granularity[gran_idx])
         if numPointsInDim == 0:
             return 0
         retVal *= numPointsInDim
@@ -81,12 +81,12 @@ def get_amount_valid_points(region, granularity, valid_point):
 
 
 def _enumerate_impl(curPoint, curIndex, region, granularity):
-    if curIndex >= region[0].size:
+    if curIndex >= region.size:
         #yield None
         return
     cp_point = curPoint.copy()
-    reg_idx = np.unravel_index(curIndex, region[0].shape)
-    while cp_point[reg_idx] < region[1][reg_idx]:
+    reg_idx = np.unravel_index(curIndex, region.shape)
+    while cp_point[reg_idx] < region.high[reg_idx]:
         last_val = False
         for i in _enumerate_impl(cp_point, curIndex + 1, region, granularity):
             if not (i is None):

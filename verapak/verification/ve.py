@@ -7,15 +7,34 @@ class VerificationEngine:
     def evaluate_args(cls, args, v, errors):
         return {}
 
-    USES_CACHE = False
-
     def verify(self, region, safety_predicate, use_cache=True):
-        if use_cache and region[2][0] is not None:
-            return from_cache(region[2][0])
-        return self.verification_impl(region, safety_predicate)
+        percent, adversarial_example = self.get_result(
+                region, safety_predicate, use_cache=use_cache)
+        if percent == 1:
+            assert adversarial_example is None, "Cannot be 100% safe and have an adversarial example!"
+            return ALL_SAFE, None
+        elif percent == 0:
+            return ALL_UNSAFE, adversarial_example
+        elif adversarial_example is not None:
+            return SOME_UNSAFE, adversarial_example
+        else:
+            return UNKNOWN, None
 
-    def save_cache(self, region, data):
-        region[2][0] = data
+    def get_result(self, region, safety_predicate, use_cache=True):
+        if use_cache:
+            if region.data.initialized:
+                return region.data.confidence, region.data.adversarial_example
+        result = self.verification_impl(region, safety_predicate)
+        if type(result) is tuple:
+            region.data.confidence = result[0]
+            region.data.adversarial_example = result[1]
+        else:
+            region.data.confidence = result
+            region.data.adversarial_example = None
+    def get_percent(self, region, safety_predicate, use_cache=True):
+        return get_result(self, region, safety_predicate, use_cache=use_cache)[0]
+    def get_adv_example(self, region, safety_predicate, use_cache=True):
+        return get_result(self, region, safety_predicate, use_cache=use_cache)[1]
 
     def verification_impl(self, region, safety_predicate):
         raise NotImplementedError("VerificationEngine did not implement verification_impl(region, safety_predicate)")

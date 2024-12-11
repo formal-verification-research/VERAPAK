@@ -38,7 +38,7 @@ class LargestFirstPartitioningStrategy(PartitioningEngine):
         self.dim_selection_strat = LargestFirstDimSelection()
 
     def partition_impl(self, region):
-        return hierarchicalDimensionRefinement(region, self.dim_selection_strat.rank_indices_impl, self.num_dimensions, self.divisor)
+        return hierarchicalDimensionRefinement(region, self.dim_selection_strat.rank, self.num_dimensions, self.divisor)
     
     def set_config(self, v):
         self.divisor = v["partitioning_divisor"]

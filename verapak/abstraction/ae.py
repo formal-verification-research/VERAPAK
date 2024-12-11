@@ -7,6 +7,9 @@ class AbstractionEngine:
     def evaluate_args(cls, args, v, errors):
         pass
 
+    def abstract(self, region, num_abstractions):
+        return self.abstraction_impl(region, num_abstractions)
+
     def abstraction_impl(self, region, num_abstractions):
         raise NotImplementedError("AbstractionEngine did not implement abstraction_impl(region, num_abstractions)")
 

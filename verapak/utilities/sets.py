@@ -1,37 +1,52 @@
-import queue
 from verapak.verification.ve import ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, TOO_BIG, UNKNOWN, BOUNDARY
 import verapak_utils
 import numpy as np
 import time
 import os
+import random
+from collections import deque
 
 class DoneInterrupt(Exception):
     pass
-
-def _make_RegionSet(reporter, name):
-    s = verapak_utils.RegionSet()
-    def wrapped(region, area, from_=None):
-        s.insert(*region)
+class WrappedRegionSet:
+    def __init__(self, reporter, name):
+        self.reporter = reporter
+        self.name = name
+        self.set = verapak_utils.RegionSet()
+    def __call__(self, region, area, from_=None):
+        self.append(region)
         if from_ is not None:
-            reporter.move_area(from_, name, area)
+            self.reporter.move_area(from_, self.name, area)
         else:
-            reporter.add_area(name, area)
-    wrapped.set = s
-    wrapped.name = name
-    return wrapped
-
-def _make_Queue(reporter, name):
-    q = queue.Queue()
-    def wrapped(region, e, area, from_=None):
-        q.put((region, e))
+            self.reporter.add_area(self.name, area)
+    def _pop(self, idx):
+        v = self.set[idx]
+        del self.set[idx]
+        return v
+    def get_next(self):
+        return self._pop(random.randrange(len(self.set)))
+    def append(self, v):
+        return self.set.append(v)
+    def __len__(self):
+        return len(self.set)
+class WrappedErrorRegionQueue:
+    def __init__(self, reporter, name):
+        self.reporter = reporter
+        self.name = name
+        self.queue = deque()
+    def __call__(self, region, e, area, from_=None):
+        self.append((region, e))
         if from_ is not None:
-            reporter.move_area(from_, name, area)
+            self.reporter.move_area(from_, self.name, area)
         else:
-            reporter.add_area(name, area)
-        reporter.add_adversarial_example(e)
-    wrapped.queue = q
-    wrapped.name = name
-    return wrapped
+            self.reporter.add_area(self.name, area)
+        self.reporter.add_adversarial_example(e)
+    def get_next(self):
+        return self.queue.popleft()
+    def append(self, v):
+        return self.queue.append(v)
+    def __len__(self):
+        return len(self.queue)
 
 VALID_SET_NAMES = [UNKNOWN, ALL_SAFE, ALL_UNSAFE, SOME_UNSAFE, BOUNDARY]
 DISPLAY_NAMES = {
@@ -43,11 +58,11 @@ DISPLAY_NAMES = {
 }
 def make_sets(reporter):
     return {
-        UNKNOWN: _make_RegionSet(reporter, UNKNOWN),
-        ALL_SAFE: _make_RegionSet(reporter, ALL_SAFE),
-        ALL_UNSAFE: _make_RegionSet(reporter, ALL_UNSAFE),
-        SOME_UNSAFE: _make_Queue(reporter, SOME_UNSAFE),
-        BOUNDARY: _make_RegionSet(reporter, BOUNDARY),
+        UNKNOWN: WrappedRegionSet(reporter, UNKNOWN),
+        ALL_SAFE: WrappedRegionSet(reporter, ALL_SAFE),
+        ALL_UNSAFE: WrappedRegionSet(reporter, ALL_UNSAFE),
+        SOME_UNSAFE: WrappedErrorRegionQueue(reporter, SOME_UNSAFE),
+        BOUNDARY: WrappedRegionSet(reporter, BOUNDARY),
         "reporter": reporter,
     }
 
@@ -59,7 +74,7 @@ class Reporter:
             self.areas[set_name] = 0
 
     def get_area(self, region):
-        area = (region[1] - region[0]) / self.scaling
+        area = (region.high - region.low) / self.scaling
         return np.prod(area)
 
     def setup(self, config, start_time=time.time()):
@@ -72,7 +87,7 @@ class Reporter:
     
     def set_initial_region(self, initial_region):
         self.initial_region = initial_region
-        self.scaling = initial_region[1] - initial_region[0] # Yields the total range of inputs - thus scaling to a 1x1x1x...x1 hypercube
+        self.scaling = initial_region.high - initial_region.low # Yields the total range of inputs - thus scaling to a 1x1x1x...x1 hypercube
         self.total_area = 1                                  # <-- which has a hypervolume of exactly 1
         self.adversarial_examples = verapak_utils.PointSet()
         assert self.total_area > 0, "Initial region has no or negative area"
@@ -94,7 +109,7 @@ class Reporter:
         elapsed_time = self.get_elapsed_time()
         show = None
         if example is not None:
-            print("Found adversarial example @", elapsed_time)
+            print("Found adversarial example @ ", elapsed_time)
             self.adversarial_examples.insert(example)
             show = ["loose", "strict"]
         if example is None:
@@ -117,11 +132,11 @@ class Reporter:
     def do_report_status(self):
         print(f"@ {self.get_elapsed_time()}")
         percent_unaccounted = 100
-        for area_name in self.areas:
-            area_percent = (self.areas[area_name] / self.total_area) * 100
+        for area_idx in self.areas:
+            area_percent = (self.areas[area_idx] / self.total_area) * 100
             percent_unaccounted -= area_percent
-            print(f"Percent {DISPLAY_NAMES[area_name]}: {area_percent}%")
-        print(f"Adversarial examples: {self.adversarial_examples.size()}")
+            print(f"Percent {DISPLAY_NAMES[area_idx]}: {area_percent}%")
+        print(f"Adversarial examples: {len(self.adversarial_examples)}")
         if percent_unaccounted > 0:
             print(f"Points unaccounted for: {percent_unaccounted}% (Likely due to floating point rounding)")
         print()

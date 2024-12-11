@@ -6,7 +6,7 @@ import math
 
 
 def _min_dim(region):
-    diff = np.abs(region[1] - region[0])
+    diff = np.abs(region.high - region.low)
     min_index = np.unravel_index(np.argmin(diff.flatten()), diff.shape)
     return diff[min_index], min_index
 
@@ -59,8 +59,7 @@ class ModFGSM(AbstractionEngine):
             # Then fall back
             return self.fallback_strategy.abstraction_impl(region, num_abstractions)
 
-        center = CenterPoint().abstraction_impl(
-            region, 1)[0]  # Get center point
+        center = CenterPoint().abstract(region, 1)[0]  # Get center point
         # Get sign of gradient
         grad = self.gradient_function(center)
         gradient_sign = np.sign(grad)
@@ -80,17 +79,17 @@ class ModFGSM(AbstractionEngine):
         #print(max_radius / self.granularity[min_dimension_index])
 
         if self.balance_factor >= 1:
-            M = np.full(region[0].shape, 1.0)
+            M = np.full(region.shape, 1.0)
         elif self.balance_factor <= 0:
-            M = np.full(region[0].shape, 0.0)
+            M = np.full(region.shape, 0.0)
         else:
-            sorted_dims = self.dimension_ranking_strategy.rank_indices_impl(region)
+            sorted_dims = self.dimension_ranking_strategy.rank(region)
             unraveled_sorted_dims = [np.unravel_index(
-                x, region[0].shape) for x in sorted_dims]
+                x, region.shape) for x in sorted_dims]
             if len(unraveled_sorted_dims[0]) == 1:
                 unraveled_sorted_dims = [x[0] for x in unraveled_sorted_dims]
-            M = np.full(region[0].shape, 0.0)
-            num_dims_fgsm = math.floor(self.balance_factor * region[0].size)
+            M = np.full(region.shape, 0.0)
+            num_dims_fgsm = math.floor(self.balance_factor * region.size)
             unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
             for dim_index in unraveled_sorted_dims:
                 M[dim_index] = 1.0

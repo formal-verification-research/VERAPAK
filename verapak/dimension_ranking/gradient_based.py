@@ -12,8 +12,7 @@ class GradientBasedDimSelection(DimensionRankingEngine):
             raise NotImplementedError(
                 "GradientBasedDimSelection requires a valid gradient function. Use set_config(config) with a valid value for \"Graph\" to set.")
 
-        center_point = self.center_point_abstraction.abstraction_impl(region, 1)[
-            0]
+        center_point = self.center_point_abstraction.abstract(region, 1)[0]
         abs_grad = np.abs(self.gradient_func(center_point))
         retVal = list(np.argsort(abs_grad.flatten()))
         retVal.reverse()

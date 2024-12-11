@@ -2,6 +2,7 @@ import numpy as np
 from verapak import snap
 from verapak.constraints import SafetyPredicate, Constraints
 from verapak.model_tools.model_base import load_graph_by_type
+from verapak_utils import Region, RegionData
 
 class ConfigValueError(Exception):
     def __init__(self, message, path=None, key=None):
@@ -208,7 +209,7 @@ def evaluate_args(args):
             else:
                 radius = np.array(radius).reshape(v["graph"].input_shape).astype(v["graph"].input_dtype)
             
-            v["initial_region"] = (v["initial_point"] - radius, v["initial_point"] + radius, ())
+            v["initial_region"] = Region(v["initial_point"] - radius, v["initial_point"] + radius, RegionData.EMPTY)
         elif region_bounds[0] is not None:
             if len(region_bounds[0]) == 1:
                 region_bounds[0] = np.full(v["graph"].input_shape, region_bounds[0])
@@ -219,7 +220,7 @@ def evaluate_args(args):
             else:
                 region_bounds[1] = np.array(region_bounds[1]).reshape(v["graph"].input_shape).astype(v["graph"].input_dtype)
 
-            v["initial_region"] = (region_bounds[0], region_bounds[1])
+            v["initial_region"] = Region(region_bounds[0], region_bounds[1], RegionData.EMPTY)
         elif load is not None:
             v["load"] = load
 

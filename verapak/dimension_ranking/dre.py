@@ -7,6 +7,9 @@ class DimensionRankingEngine:
     def evaluate_args(cls, args, v, errors):
         return v
 
+    def rank(self, region):
+        return self.rank_indices_impl(region)
+
     def rank_indices_impl(self, region):
         raise NotImplementedError("DimensionRankingEngine did not implement rank_indices_impl(region)")
 

@@ -1,42 +1,26 @@
 import numpy as np
 
-def enumerateAllRegions(partition, region, dim_index, sorted_indices, original_region, num_dimension):
-    if dim_index >= num_dimension:
-        return True
-    newr = [region[0].copy(), region[1].copy()]
-    curIndex = np.unravel_index(sorted_indices[dim_index], region[0].shape)
-    diff = newr[1][curIndex] - newr[0][curIndex]
-    while newr[1][curIndex] <= original_region[1][curIndex]:
-        if enumerateAllRegions(partition, newr, dim_index+1, sorted_indices, original_region, num_dimension):
-            partition.append([newr[0].copy(), newr[1].copy()])
-        if diff <= 0:
-            break
-        newr[0][curIndex] = newr[1][curIndex]
-        newr[1][curIndex] += diff
-    return False
-
-
 def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divisor):
     sorted_indices = dim_select_strategy(region)
-    retVal = [Region(region[0].copy(), region[1].copy(), region[2])]
+    # Starting region (i.e. what should be returned if num_dims == 0)
+    retVal = [region]
     for i in range(num_dims):
-        curIndex = np.unravel_index(sorted_indices[i], region[0].shape)
-        sizeIncrement = (region[1][curIndex] - region[0][curIndex]) / divisor
+        # Shaped index location
+        curIndex = np.unravel_index(sorted_indices[i], region.low.shape)
+        # Size of each region
+        sizeIncrement = (region.high[curIndex] - region.low[curIndex]) / divisor
+
         newRetVal = []
         for r in retVal:
             for d in range(divisor):
-                r0 = r[0].copy()
-                r1 = r[1].copy()
-                r0[curIndex] = r0[curIndex] + (sizeIncrement * d)
-                r1[curIndex] = r0[curIndex] + sizeIncrement
-                newRetVal.append(Region(r0, r1, None, parent=r))
+                # Low = region.low + sizeIncrement * i
+                low = r.low.copy()
+                low[curIndex] = low[curIndex] + (sizeIncrement * d)
+                # High = low + sizeIncrement
+                high = r.high.copy()
+                high[curIndex] = low[curIndex] + sizeIncrement
+
+                newRetVal.append(Region(low, high, RegionData.make_child(region.data)))
         retVal = newRetVal
     return retVal
-
-def Region(lower, upper, datum, data=None, parent=None):
-    if data is None and parent is None:
-        data = (None, None, None)
-    elif data is None:
-        data = parent[2][:2]
-    return (lower, upper, (datum, *data))
 
