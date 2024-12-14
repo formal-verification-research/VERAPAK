@@ -19,5 +19,6 @@ class GradientBasedDimSelection(DimensionRankingEngine):
         return retVal
 
     def set_config(self, v):
+        super().set_config(v)
         self.gradient_func = v["gradient_function"]
 

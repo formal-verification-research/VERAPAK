@@ -39,7 +39,7 @@ def write_results(config, adversarial_examples, halt_reason, elapsed_time):
     output_file.close()
 
 def save_state(config, reporter):
-    pass
+    pass # TODO
 
 def run(config):
     reporter = Reporter()

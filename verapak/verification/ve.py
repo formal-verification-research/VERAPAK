@@ -7,9 +7,9 @@ class VerificationEngine:
     def evaluate_args(cls, args, v, errors):
         return {}
 
-    def verify(self, region, safety_predicate, use_cache=True):
+    def verify(self, region, use_cache=True):
         percent, adversarial_example = self.get_result(
-                region, safety_predicate, use_cache=use_cache)
+                region, use_cache=use_cache)
         if percent == 1:
             assert adversarial_example is None, "Cannot be 100% safe and have an adversarial example!"
             return ALL_SAFE, None
@@ -20,27 +20,29 @@ class VerificationEngine:
         else:
             return UNKNOWN, None
 
-    def get_result(self, region, safety_predicate, use_cache=True):
+    def get_result(self, region, use_cache=True):
         if use_cache:
             if region.data.initialized:
                 return region.data.confidence, region.data.adversarial_example
-        result = self.verification_impl(region, safety_predicate)
+        result = self.verification_impl(region)
         if type(result) is tuple:
             region.data.confidence = result[0]
             region.data.adversarial_example = result[1]
+            return result
         else:
             region.data.confidence = result
             region.data.adversarial_example = None
-    def get_percent(self, region, safety_predicate, use_cache=True):
-        return get_result(self, region, safety_predicate, use_cache=use_cache)[0]
-    def get_adv_example(self, region, safety_predicate, use_cache=True):
-        return get_result(self, region, safety_predicate, use_cache=use_cache)[1]
+            return result, region.data.adversarial_example # TODO: For testing. Just return `result, None`
+    def get_percent(self, region, use_cache=True):
+        return self.get_result(self, region, use_cache=use_cache)[0]
+    def get_adv_example(self, region, use_cache=True):
+        return self.get_result(self, region, use_cache=use_cache)[1]
 
-    def verification_impl(self, region, safety_predicate):
-        raise NotImplementedError("VerificationEngine did not implement verification_impl(region, safety_predicate)")
+    def verification_impl(self, region):
+        raise NotImplementedError("VerificationEngine did not implement verification_impl(region)")
 
     def set_config(self, v):
-        pass # Do nothing with the config by default
+        self.safety_predicate = v["safety_predicate"]
 
     def shutdown(self):
         pass # Do nothing during shutdown by default

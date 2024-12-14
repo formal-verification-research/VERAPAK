@@ -82,9 +82,8 @@ def verify(config, region, area, sets, from_=UNKNOWN):
     # TODO: Check confidence level, and sometimes send directly to Falsify
 
     verification_engine = config['strategy']['verification'].verify
-    safety_predicate = config['safety_predicate']
 
-    verification, adv_example = verification_engine(region, safety_predicate)
+    verification, adv_example = verification_engine(region)
 
     if verification == ALL_SAFE or verification == ALL_UNSAFE:
         sets[verification](region, area, from_=from_)
@@ -161,7 +160,7 @@ def check_boundary(config, region):
         for _ in range(TINY_SUBREGIONS):
             tiny_region = np.random.random(size=len(region.low)) * region_size + region.low
             tiny_region = Region(tiny_region, tiny_region + region_size / TINY_SUBREGION_SIZE_DIVISOR)
-            verification, adv_example = verification_engine(tiny_region, safety_predicate)
+            verification, adv_example = verification_engine(tiny_region)
             if abs(verification - this[0]) < TREND_EPSILON:
                 print("Very large region detected")
                 return True # Too Big

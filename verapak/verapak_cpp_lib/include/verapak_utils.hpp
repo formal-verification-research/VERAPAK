@@ -42,8 +42,10 @@ struct RegionData {
     bool is_initialized() const;
     boost::optional<float> get_confidence() const;
     boost::optional<bool> get_siblings_equal() const;
+    boost::optional<np::ndarray> get_adversarial_example() const;
     void set_confidence(float value);
     void set_siblings_equal(bool value);
+    void set_adversarial_example(boost::optional<np::ndarray> value);
 };
 
 /* ===== Region ===== */

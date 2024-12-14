@@ -1,3 +1,4 @@
+from verapak_utils import Region
 import numpy as np
 
 def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divisor):
@@ -20,7 +21,7 @@ def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divis
                 high = r.high.copy()
                 high[curIndex] = low[curIndex] + sizeIncrement
 
-                newRetVal.append(Region(low, high, RegionData.make_child(region.data)))
+                newRetVal.append(Region(low, high, region.data.make_child()))
         retVal = newRetVal
     return retVal
 

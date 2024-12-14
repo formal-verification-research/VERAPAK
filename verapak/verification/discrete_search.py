@@ -48,10 +48,7 @@ class DiscreteSearch(VerificationEngine):
     def __init__(self):
         self.discrete_point_generator = enumerate_valid_points
 
-    def set_safety_predicate(self, safety_predicate):
-        self.safety_predicate = safety_predicate
-
-    def verification_impl(self, region, safety_predicate):
+    def verification_impl(self, region):
         if not self.should_attempt_checker(region):
             return TOO_BIG, None
         try:
@@ -61,7 +58,7 @@ class DiscreteSearch(VerificationEngine):
                 c = 0
                 bad_point = None
             for point in points:
-                if not safety_predicate(point):
+                if not self.safety_predicate(point):
                     if len(points) == 1:
                         return 0, point
                     elif not self.verify_all:
@@ -76,10 +73,10 @@ class DiscreteSearch(VerificationEngine):
             return TOO_BIG, None
 
     def set_config(self, v):
+        super().set_config(v)
         self.granularity = v["granularity"]
         self.valid_point = v["initial_point"]
         self.point_threshold = v["verification_point_threshold"]
-        self.safety_predicate = v["safety_predicate"]
         self.verify_all = v["verify_all"]
         
         def should_attempt_predicate(region):

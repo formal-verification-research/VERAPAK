@@ -111,6 +111,7 @@ class ModFGSM(AbstractionEngine):
         return retVal
 
     def set_config(self, v):
+        super().set_config(v)
         self.balance_factor = v["balance_factor"]
         self.gradient_function = v["gradient_function"]
         self.granularity = v["granularity"]

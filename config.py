@@ -237,7 +237,7 @@ def evaluate_args(args):
     if len(errors) == 0:
         if label is not None:
             constraints = Constraints.from_label(label)
-        elif constraint_file is None:
+        elif constraint_file is not None:
             constraints = Constraints.from_constraint_file(constraint_file)
         else:
             constraints = Constraints.from_label(np.argmax(v["graph"].evaluate(v["initial_point"])))

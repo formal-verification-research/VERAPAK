@@ -11,7 +11,7 @@ class PartitioningEngine:
 
     def partition(self, region):
         subregions = self.partition_impl(region)
-        return self.setup_partition_data(self, region, subregions)
+        return self.setup_partition_data(region, subregions)
 
     def setup_partition_data(self, region, subregions):
         percent = self.ve.get_percent(region)

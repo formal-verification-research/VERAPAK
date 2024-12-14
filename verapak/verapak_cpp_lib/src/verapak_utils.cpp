@@ -28,11 +28,11 @@ RegionData::RegionData(
 RegionData RegionData::make_child() const {
     return RegionData(
         NAN, // confidence
-	confidence, // confidence_parent
-	confidence_parent, // confidence_grandparent
+        confidence, // confidence_parent
+        confidence_parent, // confidence_grandparent
         true, // MUST BE SET LATER!!!
-	0, // recursion_depth
-	boost::none // adversarial_example
+        0, // recursion_depth
+        boost::none // adversarial_example
     );
 }
 
@@ -44,12 +44,18 @@ boost::optional<bool> RegionData::get_siblings_equal() const {
     if (initialized) return siblings_equal;
     else return boost::none;
 }
+boost::optional<np::ndarray> RegionData::get_adversarial_example() const {
+    return adversarial_example;
+}
 void RegionData::set_confidence(float value) {
     initialized = true;
     confidence = value;
 }
 void RegionData::set_siblings_equal(bool value) {
     siblings_equal = value;
+}
+void RegionData::set_adversarial_example(boost::optional<np::ndarray> value) {
+    adversarial_example = value;
 }
 
 const RegionData RegionData_EMPTY = RegionData();
@@ -134,29 +140,33 @@ struct optional_ndarray_from_python {
             return obj;
         }
         try {
-            return np::ndarray py::extract<np::ndarray>::extract(obj) ? obj : 0;
-        catch {
-            return nullptr
+            return py::extract<np::ndarray>(obj).check() ? obj : 0;
+        } catch (const std::exception& e) {
         }
         return nullptr;
     }
 
     static void construct(PyObject* obj, py::converter::rvalue_from_python_stage1_data* data) {
+        // Get the pointer to the storage area for the C++ object
+        void* storage = (
+            (py::converter::rvalue_from_python_storage<boost::optional<np::ndarray> >*) data
+        )->storage.bytes;
         if (obj == Py_None) {
             // If the Python object is None, construct an empty optional
-            new (data->storage) boost::optional<np::ndarray>();
+            new (storage) boost::optional<np::ndarray>();
         } else {
             // Otherwise, construct the boost::optional<np::ndarray> from the ndarray
             const np::ndarray arr = py::extract<np::ndarray>(obj);
-	    void* storage = (
-                (bp::converter::rvalue_from_python_storage<boost::optional<np::ndarray> >*)
-                data)->storage.bytes;
             new (storage) boost::optional<np::ndarray>(arr);
-	    data->convertible = storage;
         }
+        data->convertible = storage;
+    }
+
+    static void register_converter() {
+        py::converter::registry::push_back(
+            &convertible, &construct, py::type_id<boost::optional<np::ndarray>>());
     }
 };
-
 
 /* ===== BOOST_PYTHON_MODULE ===== */
 BOOST_PYTHON_MODULE(verapak_utils) {
@@ -168,22 +178,19 @@ BOOST_PYTHON_MODULE(verapak_utils) {
 
     // RegionData class
     py::class_<RegionData>("RegionData", py::init<float, float, float, bool, int>())
-        .def(py::init<RegionData>())
+        .def(py::init<>())
         .add_property("confidence", &RegionData::get_confidence, &RegionData::set_confidence)
         .def_readwrite("confidence_parent", &RegionData::confidence_parent)
         .def_readwrite("confidence_grandparent", &RegionData::confidence_grandparent)
         .add_property("siblings_equal", &RegionData::get_siblings_equal, &RegionData::set_siblings_equal)
         .def_readwrite("recursion_depth", &RegionData::recursion_depth)
-        .def_readwrite("adversarial_example", &RegionData::adversarial_example)
+        .add_property("adversarial_example", &RegionData::get_adversarial_example, &RegionData::set_adversarial_example)
         .def_readonly("initialized", &RegionData::initialized)
-        .def_readonly("EMPTY", &RegionData_EMPTY);
+        .def_readonly("EMPTY", &RegionData_EMPTY)
+	.def("make_child", &RegionData::make_child);
     py::to_python_converter<boost::optional<float>, optional_float_to_python>();
     py::to_python_converter<boost::optional<np::ndarray>, optional_ndarray_to_python>();
-    py::converter::registry::push_back(
-        &optional_ndarray_from_python::convertible,
-        &optional_ndarray_from_python::construct,
-        type_id<boost::optional<np::ndarray>>()
-    );
+    optional_ndarray_from_python::register_converter();
 
     // Region class
     py::class_<Region>("Region", py::init<Point, Point, RegionData>())

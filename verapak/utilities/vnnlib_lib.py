@@ -6,6 +6,7 @@ import numpy as np
 class NonMaximalVNNLibError(ValueError):
     pass
 
+# TODO: Add parsability for non-maximal VNNLIB files
 class VNNLib():
     def __init__(self, filename):
         vnn_data = read_vnnlib_simple(filename)

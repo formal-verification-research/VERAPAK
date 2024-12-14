@@ -24,15 +24,15 @@ class ERAN(VerificationEngine):
     def __init__(self):
         pass
 
-    def verification_impl(self, region, safety_predicate):
+    def verification_impl(self, region):
         specLB = region.low
         specUB = region.high
-        percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, safety_predicate.constraints)
+        percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, self.safety_predicate.constraints)
         return percent
 
     def set_config(self, v):
+        super().set_config(v)
         self.graph_path = v["graph"].get_path()
         self.eran = ERAN_factory(self.graph_path)
-        self.safety_predicate = v["safety_predicate"]
         self.timeout = v["eran_timeout"]
 
