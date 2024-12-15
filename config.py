@@ -219,7 +219,7 @@ def evaluate_args(args):
             else:
                 region_bounds[1] = np.array(region_bounds[1]).reshape(v["graph"].input_shape).astype(v["graph"].input_dtype)
 
-            v["initial_region"] = (region_bounds[0], region_bounds[1])
+            v["initial_region"] = (region_bounds[0], region_bounds[1], ())
         elif load is not None:
             v["load"] = load
 
@@ -236,7 +236,7 @@ def evaluate_args(args):
     if len(errors) == 0:
         if label is not None:
             constraints = Constraints.from_label(label)
-        elif constraint_file is None:
+        elif constraint_file is not None:
             constraints = Constraints.from_constraint_file(constraint_file)
         else:
             constraints = Constraints.from_label(np.argmax(v["graph"].evaluate(v["initial_point"])))
