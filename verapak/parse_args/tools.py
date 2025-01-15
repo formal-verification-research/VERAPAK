@@ -33,9 +33,12 @@ def get_strategy_groups_supported():
     supported = list()
     for strategy_type in strategy_registry.ALL_STRATEGIES.values():
         for strategy in strategy_type.values():
-            params = strategy.get_config_parameters()
-            if params is not None and len(params) > 0:
-                supported.extend(params)
+            new_args = strategy.get_config_parameters()
+            if new_args is not None and len(new_args) > 0:
+                for new_arg in new_args:
+                    if "type" in new_arg["arg_params"]:
+                        new_arg["arg_params"]["type"] = type_string_to_type(new_arg["arg_params"]["type"])
+                supported.extend(new_args)
     return supported
 
 def add_per_strategy_groups(parser, prog):
@@ -137,7 +140,13 @@ def parse_vnnlib_args(vnnlib_file):
 def combine_args(supported_args, *arg_sets):
     """ Combine args with priority from first in the list to last in the list """
     base_dict = arg_sets[0]
-    sup_arg_dict = {arg['arg_params'].get('dest', arg['name']): arg['arg_params'] for arg in supported_args}
+    sup_arg_dict = {arg['arg_params'].get('dest', arg['name']): arg['arg_params'].copy() for arg in supported_args}
+    for arg_params in sup_arg_dict.values():
+        if "default" in arg_params:
+            if "type" in arg_params and arg_params["default"] is not None:
+                arg_params["default_value"] = arg_params["type"](arg_params["default"])
+            else:
+                arg_params["default_value"] = arg_params["default"]
     for i in range(1,len(arg_sets)):
         this_dict = arg_sets[i]
         if this_dict is None:
@@ -146,7 +155,7 @@ def combine_args(supported_args, *arg_sets):
         for key, value in base_dict.items():
             supported_arg = sup_arg_dict[key]
             if key in this_dict:
-                if value is None or ('default' in supported_arg and value == supported_arg['default']):
+                if value is None or ('default_value' in supported_arg and value == supported_arg['default_value']):
                     base_dict[key] = this_dict[key]
         if "error" in this_dict:
             if "error" not in base_dict:

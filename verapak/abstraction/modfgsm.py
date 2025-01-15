@@ -1,7 +1,6 @@
 from verapak.abstraction.ae import AbstractionEngine
 from verapak.abstraction.center_point import CenterPoint
 import numpy as np
-from verapak.dimension_ranking.by_index import ByIndexDimSelection
 import math
 
 
@@ -35,7 +34,7 @@ class ModFGSM(AbstractionEngine):
                 {
                     'type': "strategy:dimension_ranking",
                     'help': "RFGSM dimension ranking strategy: (oneof gradient_based, by_index, largest_first)",
-                    'default': ByIndexDimSelection
+                    'default': "by_index"
                 }
         }]
 
