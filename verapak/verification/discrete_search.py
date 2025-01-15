@@ -26,7 +26,7 @@ class DiscreteSearch(VerificationEngine):
                 "help": "Whether to check every single point, giving an exact safety percentage instead of just a True/False safety statement (will drastically slow down result gathering)"
             }
         }]
-    
+
     @classmethod
     def evaluate_args(cls, args, v, errors):
         v["granularity"] = args.get("granularity"), # RESHAPED
@@ -38,7 +38,8 @@ class DiscreteSearch(VerificationEngine):
 
         # Reshape granularity
         if len(errors) == 0:
-            if v["radius"] is not None:
+            if v["initial_region"] is not None:
+                radius = v["initial_region"].high - v["initial_region"].low
                 v["granularity"] = np.array(v["granularity"], dtype=np.string_).reshape(v["graph"].input_shape)
                 v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), radius, 1)
                 v["granularity"] = v["granularity"].reshape(v["graph"].input_shape)
@@ -54,7 +55,7 @@ class DiscreteSearch(VerificationEngine):
         try:
             points = self.discrete_point_generator(
                 region, self.granularity, self.valid_point)
-            if verify_all:
+            if self.verify_all:
                 c = 0
                 bad_point = None
             for point in points:
@@ -66,7 +67,7 @@ class DiscreteSearch(VerificationEngine):
                     else:
                         c += 1
                         bad_point = point
-            if verify_all:
+            if self.verify_all:
                 return c / len(points), bad_point
             return 1, None
         except RecursionError: # Tried to process something too big
@@ -78,10 +79,10 @@ class DiscreteSearch(VerificationEngine):
         self.valid_point = v["initial_point"]
         self.point_threshold = v["verification_point_threshold"]
         self.verify_all = v["verify_all"]
-        
+        self.ignore = v["ignored_dimensions"]
+
         def should_attempt_predicate(region):
             num_points = get_amount_valid_points(
                 region, self.granularity, self.valid_point)
             return num_points <= self.point_threshold
         self.should_attempt_checker = should_attempt_predicate
-

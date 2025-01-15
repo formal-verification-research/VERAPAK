@@ -80,6 +80,9 @@ def get_amount_valid_points(region, granularity, valid_point):
     return retVal
 
 
+# TODO: Implement in a more memory-efficient way
+# TODO: Make sure this works for dimensions of width 0
+#       (i.e. only one point along that dimension)
 def _enumerate_impl(curPoint, curIndex, region, granularity):
     if curIndex >= region.size:
         #yield None
