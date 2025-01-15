@@ -34,9 +34,9 @@ class VerificationEngine:
             region.data.adversarial_example = None
             return result, region.data.adversarial_example # TODO: For testing. Just return `result, None`
     def get_percent(self, region, use_cache=True):
-        return self.get_result(self, region, use_cache=use_cache)[0]
+        return self.get_result(region, use_cache=use_cache)[0]
     def get_adv_example(self, region, use_cache=True):
-        return self.get_result(self, region, use_cache=use_cache)[1]
+        return self.get_result(region, use_cache=use_cache)[1]
 
     def verification_impl(self, region):
         raise NotImplementedError("VerificationEngine did not implement verification_impl(region)")
