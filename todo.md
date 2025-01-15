@@ -8,3 +8,10 @@
     - [VNNCOMP'24 run\_all\_categories.sh](https://github.com/ChristopherBrix/vnncomp2024_benchmarks/blob/main/run_all_categories.sh)
  - [ ] Add .keras reading ability
 
+## Writing
+ - [ ] Termination proof
+ - [ ] Soundness proof
+ - [ ] Benchmarking
+ - [ ] Submit paper for publication
+ - [ ] Write README and extensive documentation
+
