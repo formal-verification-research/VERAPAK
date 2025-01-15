@@ -32,7 +32,7 @@ class DiscreteSearch(VerificationEngine):
         if len(errors) == 0:
             if v["radius"] is not None:
                 v["granularity"] = np.array(v["granularity"], dtype=np.string_).reshape(v["graph"].input_shape)
-                v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), radius, 1)
+                v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), v["radius"], 1)
                 v["granularity"] = v["granularity"].reshape(v["graph"].input_shape)
             else:
                 v["granularity"] = np.array(v["granularity"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
@@ -69,6 +69,7 @@ class DiscreteSearch(VerificationEngine):
         self.valid_point = v["initial_point"]
         self.point_threshold = v["verification_point_threshold"]
         self.safety_predicate = v["safety_predicate"]
+        self.ignore = v["ignored_dimensions"]
         
         def should_attempt_predicate(region):
             num_points = get_amount_valid_points(

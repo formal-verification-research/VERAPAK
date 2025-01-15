@@ -59,21 +59,27 @@ class Reporter:
             self.areas[set_name] = 0
 
     def get_area(self, region):
-        area = (region[1] - region[0]) / self.scaling
-        return np.prod(area)
+        # Adding self.ignore prevents division by zero on ignored dimensions
+        # NOTE: Should we add self.ignore to the numerator? What if there *is* a value in an ignored dimension?
+        area = (region[1] - region[0]) / (self.scaling + self.ignore)
+        # Adding self.ignore prevents area from being zero when multiplying by ignored dimensions
+        # NOTE: Implementing the above note would mean we don't need to add self.ignore here (0/1 + 1 vs. 1/1)
+        return np.prod(area + self.ignore)
 
     def setup(self, config, start_time=time.time()):
         self.config = config
         self.start_time = start_time
         self.last_report = start_time
-        self.set_initial_region(config['initial_region'])
+        self.set_initial_region(config['initial_region'], config["ignored_dimensions"])
         self.found_first_example = False
         self.started = True
     
-    def set_initial_region(self, initial_region):
+    def set_initial_region(self, initial_region, ignored):
         self.initial_region = initial_region
         self.scaling = initial_region[1] - initial_region[0] # Yields the total range of inputs - thus scaling to a 1x1x1x...x1 hypercube
         self.total_area = 1                                  # <-- which has a hypervolume of exactly 1
+        self.ignore = ignored # Before using np.prod or dividing, remove ignored dimensions
+                              # Either by adding ignore to the numerator *and* denominator, or filtering them out
         self.adversarial_examples = verapak_utils.PointSet()
         assert self.total_area > 0, "Initial region has no or negative area"
 
