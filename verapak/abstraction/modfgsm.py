@@ -5,7 +5,7 @@ import math
 
 
 def _min_dim(region, ignore):
-    diff = np.abs(region[1] - region[0]) + (np.inf * ignore)
+    diff = np.where(ignore, np.inf, np.abs(region[1] - region[0]))
     min_index = np.unravel_index(np.argmin(diff.flatten()), diff.shape)
     return diff[min_index], min_index
 
