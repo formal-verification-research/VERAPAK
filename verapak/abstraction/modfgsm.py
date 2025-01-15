@@ -63,7 +63,7 @@ class ModFGSM(AbstractionEngine):
         grad = self.gradient_function(center)
         gradient_sign = np.sign(grad)
 
-        min_dimension_range, min_dimension_index = _min_dim(region, self.ignore_dimensions)
+        min_dimension_range, min_dimension_index = _min_dim(region, self.ignored_dimensions)
         # Divide by 1.25 probably to keep points within the region, not on the borders.
         max_radius = min_dimension_range / 1.25
 

@@ -253,7 +253,7 @@ def evaluate_args(args):
         v["gradient_function"] = lambda point: v["graph"].gradient_of_loss_wrt_input(point, v["safety_predicate"].best_case_scenario(point))
 
     # Compute ignored_dimensions
-    def is_ignored(x): x == 0
+    def is_ignored(x): return x == 0
     is_ignored = np.vectorize(is_ignored)
     v["ignored_dimensions"] = is_ignored(v["initial_region"].high - v["initial_region"].low)
 

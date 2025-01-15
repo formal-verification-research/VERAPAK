@@ -50,12 +50,19 @@ def numArrayType(string):
     except ValueError as ex:
         raise ConfigValueError(ex.args[0])
 
+def _numArrayFromXNumArray(radius, xnum):
+    to_multiply = np.vectorize(lambda x: x.endswith(b'x'))(xnum)
+    v = np.where(to_multiply, 0, xnum).astype(np.float64)
+    mult = np.vectorize(lambda s: s[:-1])(np.where(to_multiply, xnum, 0)).astype(np.float64)
+    return (mult * radius) + np.broadcast_to(v, radius.shape)
+
 def xNumArrayType(string):
     try:
         if "x" not in string:
-            return numArrayType(string)
+            return lambda _: numArrayType(string)
         else:
-            return np.array([x.strip() for x in string.split(',')], dtype=np.string_)
+            xnum = np.array([x.strip() for x in string.split(',')], dtype=np.string_)
+            return lambda radius: _numArrayFromXNumArray(radius, xnum)
     except ValueError as ex:
         raise ConfigValueError(ex.args[0])
 
