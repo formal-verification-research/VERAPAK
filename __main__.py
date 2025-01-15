@@ -33,10 +33,11 @@ def write_results(config, adversarial_examples, halt_reason, elapsed_time):
     if halt_reason in ["done", "first"]:
         halt_reason = "sat" if (adv_count > 0) else "unsat"
 
-    output_file = os.path.join(config['output_dir'], 'report.csv')
-    output_file = open(output_file, 'w')
-    output_file.write(f"{halt_reason},{witness},{adv_count},{elapsed_time}\n")
-    output_file.close()
+    if "output_dir" in config:
+        output_file = os.path.join(config['output_dir'], 'report.csv')
+        output_file = open(output_file, 'w')
+        output_file.write(f"{halt_reason},{witness},{adv_count},{elapsed_time}\n")
+        output_file.close()
 
 def save_state(config, reporter):
     pass

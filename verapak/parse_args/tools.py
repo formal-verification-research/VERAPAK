@@ -33,9 +33,12 @@ def get_strategy_groups_supported():
     supported = list()
     for strategy_type in strategy_registry.ALL_STRATEGIES.values():
         for strategy in strategy_type.values():
-            params = strategy.get_config_parameters()
-            if params is not None and len(params) > 0:
-                supported.extend(params)
+            args = strategy.get_config_parameters()
+            if args is not None and len(args) > 0:
+                for arg in args:
+                    if "type" in arg["arg_params"]:
+                        arg["arg_params"]["type"] = type_string_to_type(arg["arg_params"]["type"])
+                supported.extend(args)
     return supported
 
 def add_per_strategy_groups(parser, prog):
@@ -137,7 +140,13 @@ def parse_vnnlib_args(vnnlib_file):
 def combine_args(supported_args, *arg_sets):
     """ Combine args with priority from first in the list to last in the list """
     base_dict = arg_sets[0]
-    sup_arg_dict = {arg['arg_params'].get('dest', arg['name']): arg['arg_params'] for arg in supported_args}
+    sup_arg_dict = {arg['arg_params'].get('dest', arg['name']): arg['arg_params'].copy() for arg in supported_args}
+    for params in sup_arg_dict.values():
+        if 'default' in params:
+            if 'type' in params and params['default'] is not None:
+                params['default_value'] = params['type'](params['default'])
+            else:
+                params['default_value'] = params['default']
     for i in range(1,len(arg_sets)):
         this_dict = arg_sets[i]
         if this_dict is None:
@@ -146,7 +155,7 @@ def combine_args(supported_args, *arg_sets):
         for key, value in base_dict.items():
             supported_arg = sup_arg_dict[key]
             if key in this_dict:
-                if value is None or ('default' in supported_arg and value == supported_arg['default']):
+                if value is None or ('default_value' in supported_arg and value == supported_arg['default_value']):
                     base_dict[key] = this_dict[key]
         if "error" in this_dict:
             if "error" not in base_dict:

@@ -5,11 +5,10 @@ from .random_point import RandomPoint
 class RFGSM(ModFGSM):
     @classmethod
     def get_config_parameters(cls):
-        from ..dimension_ranking.gradient_based import GradientBasedDimSelection
         parent = ModFGSM.get_config_parameters()
         non_strat = list(filter(lambda item: item["name"] != "dimension_ranking_strategy", parent))
         strat = next(filter(lambda item: item["name"] == "dimension_ranking_strategy", parent))
-        strat["arg_params"]["default"] = GradientBasedDimSelection
+        strat["arg_params"]["default"] = "gradient_based"
         return [*non_strat, strat]
 
     @classmethod
