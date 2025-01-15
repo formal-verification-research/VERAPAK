@@ -4,8 +4,8 @@ import numpy as np
 import math
 
 
-def _min_dim(region):
-    diff = np.abs(region[1] - region[0])
+def _min_dim(region, ignore):
+    diff = np.abs(region[1] - region[0]) + (np.inf * ignore)
     min_index = np.unravel_index(np.argmin(diff.flatten()), diff.shape)
     return diff[min_index], min_index
 
@@ -64,7 +64,7 @@ class ModFGSM(AbstractionEngine):
         grad = self.gradient_function(center)
         gradient_sign = np.sign(grad)
 
-        min_dimension_range, min_dimension_index = _min_dim(region)
+        min_dimension_range, min_dimension_index = _min_dim(region, self.ignore_dimensions)
         # Divide by 1.25 probably to keep points within the region, not on the borders.
         max_radius = min_dimension_range / 1.25
 
@@ -79,22 +79,23 @@ class ModFGSM(AbstractionEngine):
         #print(max_radius / self.granularity[min_dimension_index])
 
         if self.balance_factor >= 1:
-            M = np.full(region[0].shape, 1.0)
+            M = np.full(region[0].shape, True)
         elif self.balance_factor <= 0:
-            M = np.full(region[0].shape, 0.0)
+            M = np.full(region[0].shape, False)
         else:
             sorted_dims = self.dimension_ranking_strategy.rank_indices_impl(region)
             unraveled_sorted_dims = [np.unravel_index(
                 x, region[0].shape) for x in sorted_dims]
             if len(unraveled_sorted_dims[0]) == 1:
                 unraveled_sorted_dims = [x[0] for x in unraveled_sorted_dims]
-            M = np.full(region[0].shape, 0.0)
+            M = np.full(region[0].shape, False)
             num_dims_fgsm = math.floor(self.balance_factor * region[0].size)
             unraveled_sorted_dims = unraveled_sorted_dims[:num_dims_fgsm]
             for dim_index in unraveled_sorted_dims:
-                M[dim_index] = 1.0
+                M[dim_index] = True
+        M &= self.allowed_dimensions
         fgsm_part = gradient_sign * M
-        Mnot = M * -1.0 + 1.0
+        Mnot = (~M) & self.allowed_dimensions
 
         retVal = []
         for _ in range(0, num_abstractions):
@@ -114,6 +115,8 @@ class ModFGSM(AbstractionEngine):
         self.balance_factor = v["balance_factor"]
         self.gradient_function = v["gradient_function"]
         self.granularity = v["granularity"]
+        self.ignored_dimensions = v["ignored_dimensions"]
+        self.allowed_dimensions = ~self.ignored_dimensions
 
         if self.balance_factor > 0 and self.balance_factor < 1:
             self.dimension_ranking_strategy = v["strategy"]["dimension_ranking"]
