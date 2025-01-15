@@ -22,7 +22,7 @@ class DiscreteSearch(VerificationEngine):
     
     @classmethod
     def evaluate_args(cls, args, v, errors):
-        v["granularity"] = args.get("granularity"), # RESHAPED
+        v["granularity"] = args.get("granularity") # RESHAPED
         v["verification_point_threshold"] = args["verification_point_threshold"]
 
         if v["granularity"] is None:
@@ -30,12 +30,7 @@ class DiscreteSearch(VerificationEngine):
 
         # Reshape granularity
         if len(errors) == 0:
-            if v["radius"] is not None:
-                v["granularity"] = np.array(v["granularity"], dtype=np.string_).reshape(v["graph"].input_shape)
-                v["granularity"] *= np.where(np.char.endswith(v["granularity"], "x"), v["radius"], 1)
-                v["granularity"] = v["granularity"].reshape(v["graph"].input_shape)
-            else:
-                v["granularity"] = np.array(v["granularity"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
+            v["granularity"] = np.broadcast_to(v["granularity"](v["initial_region"][1] - v["initial_region"][0]), v["initial_region"][0].shape)
 
     def __init__(self):
         self.discrete_point_generator = enumerate_valid_points

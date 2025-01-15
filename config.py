@@ -252,9 +252,9 @@ def evaluate_args(args):
         v["gradient_function"] = lambda point: v["graph"].gradient_of_loss_wrt_input(point, v["safety_predicate"].best_case_scenario(point))
 
     # Computed ignored_dimensions
-    def is_ignored(x): x == 0
+    def is_ignored(x): return x == 0
     is_ignored = np.vectorize(is_ignored)
-    v["ignored_dimensions"] = is_ignored(v["initial_region"].high - v["initial_region"].low)
+    v["ignored_dimensions"] = is_ignored(v["initial_region"][1] - v["initial_region"][0])
 
     # Reshape and compute each strategy's optional arguments
     #   Added strategies must be evaluated *by the parent strategy*
