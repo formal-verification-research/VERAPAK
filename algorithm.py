@@ -107,19 +107,9 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
             if point_in_region(region, point):
                 sets[SOME_UNSAFE](region, point, area, from_=from_)
                 break
-            else: # In case our abstraction engine gives a point outside this region
-                # Only check UNKNOWN because SOME_UNSAFE is redundant, and ALL_UNSAFE and ALL_SAFE should be impossible
-                found, found_region = sets[UNKNOWN].set.get_and_remove_region_containing_point(point)
-                if found:
-                    found_region = [x.reshape(config['graph'].input_shape)
-                                    .astype(config['graph'].input_dtype)
-                                    for x in found_region]
-                    # TODO: define get_area(partition) in a better location
-                    found_region_area = sets['reporter'].get_area(found_region)
-                    sets[SOME_UNSAFE](found_region, point, found_region_area, from_=from_)
-    else:
-        # All abstracted points were safe
-        sets[UNKNOWN](region, area, from_=from_)
+        else:
+            # All abstracted points were safe
+            sets[UNKNOWN](region, area, from_=from_)
 
 
 TREND_EPSILON = 0.01

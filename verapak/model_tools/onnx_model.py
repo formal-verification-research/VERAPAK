@@ -34,7 +34,8 @@ class ONNXModel(ModelBase):
         in_tf = tf.Variable(self._cast_point_input(point))
         with tf.GradientTape() as tape:
             tape.watch(in_tf)
-            output = self.model_internal.run(in_tf)
+            output = self.model_internal.tf_module(
+                **{self.model_internal.inputs[0]: in_tf})[self.model_internal.outputs[0]]
             loss = output_to_loss(output, label_tf)
         return tape.gradient(loss, in_tf)
 

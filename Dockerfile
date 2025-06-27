@@ -1,16 +1,20 @@
 # syntax=docker/dockerfile:labs
-FROM tensorflow/tensorflow:2.5.0
+FROM tensorflow/tensorflow:2.11.0
 ARG USE_GPU=""
+RUN python3 --version
 
-RUN apt-get update && apt-get install -y git wget && pip install -U pip
+RUN apt-get update && apt-get install -y git wget python3-dev && pip install -U pip
 
 RUN curl -fsSL https://get.docker.com -o get-docker.sh
 RUN sh ./get-docker.sh --dry-run
 RUN pip install docker
 
-RUN git clone --depth 1 --branch v1.9.0 https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow && pip install -e .
+# RUN git clone --depth 1 --branch v1.9.0 https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow && pip install -e .
 
-RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz && tar -xvzf boost_1_77_0.tar.gz && cd boost_1_77_0 && ./bootstrap.sh --with-python=python3 --with-libraries=python,system && ./b2 install
+RUN pip install onnx_tf==1.9.0
+RUN pip install protobuf==3.20.0
+
+RUN wget https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz && tar -xvzf boost_1_88_0.tar.gz && cd boost_1_88_0 && ./bootstrap.sh --with-python=python3 --with-libraries=python,system && ./b2 install
 
 RUN apt-get install -y cmake
 RUN apt-get -y install m4 autoconf libtool texlive-latex-base
@@ -21,7 +25,7 @@ ADD https://github.com/yodarocks1/eran.git /src/eran/
 WORKDIR /src/eran
 RUN if [ -z "$USE_GPU" ]; then ./install.sh; else ./install.sh --use-cuda; fi
 RUN bash -c "source ./gurobi_setup_path.sh"
-ENV PYTHONPATH="/src/eran/python_interface/"
+ENV PYTHONPATH="/src/eran/gurobi912/linux64/lib/python3.8_utf32/:/src/eran/python_interface/:${PYTHONPATH}"
 
 RUN rm /root/.bashrc
 ADD . /src/VERAPAK
@@ -33,5 +37,3 @@ RUN cat /src/VERAPAK/githubKey >> /root/.ssh/known_hosts
 RUN mkdir /src/VERAPAK/_build && cd /src/VERAPAK/_build && cmake .. && make install -j12
 
 WORKDIR /root
-
-

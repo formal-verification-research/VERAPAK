@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 class ModelBase:
     def __init__(self, model, input_shape, output_shape, input_dtype, output_dtype):
