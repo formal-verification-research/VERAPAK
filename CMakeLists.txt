@@ -1,7 +1,9 @@
 project(VERAPAK)
 cmake_minimum_required(VERSION 3.10.2)
 
-# Find Python 3: automatically finds includes and libraries 
+# Find Python 3: This is the critical part. It automatically finds
+# includes (like pyconfig.h) and libraries (like libpython3.8m.so)
+# and defines targets like Python3::Python and Python3::Module.
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
 find_package(Boost 1.88.0 COMPONENTS python system numpy REQUIRED)
