@@ -10,7 +10,7 @@ RUN pip install docker
 
 RUN git clone --depth 1 --branch v1.9.0 https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow && pip install -e .
 
-RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz && tar -xvzf boost_1_77_0.tar.gz && cd boost_1_77_0 && ./bootstrap.sh --with-python=python3 --with-libraries=python,system && ./b2 install
+RUN wget https://archives.boost.io/release/1.77.0/source/boost_1_77_0.tar.gz && tar -xvzf boost_1_77_0.tar.gz && cd boost_1_77_0 && ./bootstrap.sh --with-python=python3 --with-libraries=python,system && ./b2 install
 
 RUN apt-get install -y cmake
 RUN apt-get -y install m4 autoconf libtool texlive-latex-base

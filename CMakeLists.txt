@@ -1,19 +1,25 @@
 project(VERAPAK)
 cmake_minimum_required(VERSION 3.10.2)
 
-include_directories(${CMAKE_SOURCE_DIR}/verapak/verapak_cpp_lib/include)
-include_directories(/usr/include/python3.6)
-include_directories(/boost_1_77_0)
+# Find Python 3: automatically finds includes and libraries 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
-link_directories(/usr/lib/x86_64-linux-gnu)
-link_directories(/usr/local/lib)
+find_package(Boost 1.88.0 COMPONENTS python system numpy REQUIRED)
+
+# Add your source include directory
+include_directories(${CMAKE_SOURCE_DIR}/verapak/verapak_cpp_lib/include)
+
 
 file(GLOB SOURCES verapak/verapak_cpp_lib/src/*.cpp)
 add_library(verapak_utils SHARED ${SOURCES})
 
-target_link_libraries(verapak_utils boost_python36 boost_system python3.6m boost_numpy36)
+target_link_libraries(verapak_utils PUBLIC
+    Python3::Python     # Correct way to link to Python development library
+    Boost::python       # Correct way to link to Boost.Python
+    Boost::system       # Correct way to link to Boost.System
+    Boost::numpy
+)
 
 set_target_properties(verapak_utils PROPERTIES PREFIX "")
 set_property(TARGET verapak_utils PROPERTY CXX_STANDARD 17)
-
-install(TARGETS verapak_utils DESTINATION /usr/local/lib/python3.6/dist-packages)
+install(TARGETS verapak_utils DESTINATION /usr/local/lib/python3.8/dist-packages)
