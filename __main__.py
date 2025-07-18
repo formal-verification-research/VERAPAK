@@ -63,7 +63,7 @@ def run(config):
     else:
         et = 0
     adversarial = reporter.get_adversarial_examples()
-    halt_reason = reporter.get_halt_reason
+    halt_reason = reporter.get_halt_reason()
     write_results(config, adversarial, halt_reason, et)
     print('done')
 
