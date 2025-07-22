@@ -9,4 +9,6 @@ fi
 mkdir verapak
 mkdir verapak/in
 mkdir verapak/out
+docker stop verapak
+docker rm verapak
 docker run --name verapak -v "$PWD/verapak":/mnt -dit yodarocks1/verapak:latest /bin/sh

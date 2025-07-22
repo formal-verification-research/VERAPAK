@@ -1,3 +1,5 @@
+import warnings
+
 import tensorflow as tf
 import onnx
 import numpy as np
@@ -56,24 +58,36 @@ def get_onnx_node_dtype(node):
 
 
 def get_onnx_input_shape(onnx_model):
-    if len(onnx_model.graph.input) > 1:
-        print('multiple input nodes... chosing the first')
-    node = onnx_model.graph.input[0]
-    return get_onnx_node_shape(node)
+    return get_onnx_node_shape(get_onnx_input_node(onnx_model))
 
 
 def get_onnx_output_shape(onnx_model):
-    if len(onnx_model.graph.output) > 1:
-        print('multiple output nodes... chosing the first')
-    node = onnx_model.graph.output[0]
-    return get_onnx_node_shape(node)
+    return get_onnx_node_shape(get_onnx_output_node(onnx_model))
 
 
 def get_onnx_input_dtype(onnx_model):
-    node = onnx_model.graph.input[0]
-    return get_onnx_node_dtype(node)
+    return get_onnx_node_dtype(get_onnx_input_node(onnx_model))
 
 
 def get_onnx_output_dtype(onnx_model):
-    node = onnx_model.graph.output[0]
-    return get_onnx_node_dtype(node)
+    return get_onnx_node_dtype(get_onnx_output_node(onnx_model))
+
+def select_onnx_node(onnx_model, to_select, qualifier):
+    if len(to_select) == 1:
+        return to_select
+    nodes = onnx_model.graph.node
+    for node in nodes:
+        to_select = filter(lambda s: qualifier(s, node), to_select)
+    return list(to_select)
+
+def get_onnx_input_node(onnx_model):
+    inputs = select_onnx_node(onnx_model, onnx_model.graph.input, lambda input, node: input.name not in node.output)
+    if len(inputs) > 1:
+        warnings.warn(f'multiple input nodes... choosing the last, named "{inputs[-1].name}"', ResourceWarning, source=onnx_model.graph.name)
+    return inputs[-1]
+
+def get_onnx_output_node(onnx_model):
+    outputs = select_onnx_node(onnx_model, onnx_model.graph.output, lambda output, node: output.name not in node.input)
+    if len(outputs) > 1:
+        warnings.warn(f'multiple output nodes... choosing the last, named "{outputs[-1].name}"', ResourceWarning, source=onnx_model.graph.name)
+    return outputs[-1]

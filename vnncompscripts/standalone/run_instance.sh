@@ -25,7 +25,7 @@ echo -n " $ONNX_SHORT-$VNNLIB_SHORT "
 echo -e "\033[38;2;0;128;0m+++\033[0m"
 echo "Timeout: $TIMEOUT"
 
-docker exec -it verapak python3 /src/VERAPAK --config_file /mnt/in/vnncomp.conf --output_dir=/mnt/out --timeout="$TIMEOUT" --halt_on_first
+docker exec verapak python3 /src/VERAPAK --config_file /mnt/in/vnncomp.conf --output_dir=/mnt/out --timeout="$TIMEOUT" --halt_on_first
 
 mkdir -p "verapak/out/$CATEGORY"
 mv verapak/out/adversarial_examples.npy	"verapak/out/$CATEGORY/$ONNX_SHORT-$VNNLIB_SHORT.npy" 2> /dev/null

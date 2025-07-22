@@ -11,8 +11,11 @@ RUN pip install docker
 
 # RUN git clone --depth 1 --branch v1.9.0 https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow && pip install -e .
 
-RUN pip install onnx_tf==1.9.0
+RUN pip install onnx_tf==1.10.0    # DEPRECATED
 RUN pip install protobuf==3.20.0
+RUN pip install vnnlib==0.0.1.post1
+RUN pip install tensorflow_probability==0.19.0
+# RUN pip install onnxruntime-gpu==1.19.2
 
 RUN wget https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz && tar -xvzf boost_1_88_0.tar.gz && cd boost_1_88_0 && ./bootstrap.sh --with-python=python3 --with-libraries=python,system && ./b2 install
 

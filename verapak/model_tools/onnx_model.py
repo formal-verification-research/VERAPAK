@@ -14,20 +14,20 @@ class ONNXModel(ModelBase):
         output_shape = get_onnx_output_shape(onnx_model)
         input_dtype = get_onnx_input_dtype(onnx_model)
         output_dtype = get_onnx_output_dtype(onnx_model)
+        self.input_node = get_onnx_input_node(onnx_model)
+        self.output_node = get_onnx_output_node(onnx_model)
 
         if input_shape[0] == -1:
             input_shape = [1] + input_shape[1:]
 
         super().__init__(prepare(onnx_model), input_shape,
                          output_shape, input_dtype, output_dtype)
-        self.model_internal.tensor_dict = self.model_internal.tf_module.gen_tensor_dict(
-            {self.model_internal.inputs[0]: self._cast_point_input(np.zeros(self.input_shape))})
 
     def get_path(self):
         return self.path
 
     def evaluate(self, point):
-        return self.model_internal.run(self._cast_point_input(point))[0]
+        return self.model_internal.run(self._cast_point_input(point))[self.output_node.name]
 
     def gradient_of_loss_wrt_input(self, point, label):
         label_tf = tf.constant(self._cast_point_output(label))
@@ -35,7 +35,7 @@ class ONNXModel(ModelBase):
         with tf.GradientTape() as tape:
             tape.watch(in_tf)
             output = self.model_internal.tf_module(
-                **{self.model_internal.inputs[0]: in_tf})[self.model_internal.outputs[0]]
+                **{self.input_node.name: in_tf})[self.output_node.name]
             loss = output_to_loss(output, label_tf)
         return tape.gradient(loss, in_tf)
 

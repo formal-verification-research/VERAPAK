@@ -1,15 +1,18 @@
-from . import vnnlib_base
-
-import re
 import numpy as np
+
+from ml_constraints import Constraints
+from ml_constraints.constraints import ComparisonConstraint, Constant, Label
+from vnnlib.compat import read_vnnlib_simple
+
 
 class NonMaximalVNNLibError(ValueError):
     pass
+class UnrepresentableVNNLibError(ValueError):
+    pass
 
-# TODO: Add parsability for non-maximal VNNLIB files
 class VNNLib():
     def __init__(self, filename):
-        vnn_data = read_vnnlib_simple(filename)
+        vnn_data = read_vnnlib_simple(filename, None, None)
         self.inputs = np.transpose(np.array(vnn_data[0][0]))
         self.mat = [] # Matrix
         self.rhs = [] # Right hand side
@@ -89,17 +92,39 @@ class VNNLib():
     def get_domain(self):
         return self.inputs
 
+    def get_constraints(self):
+        constraints = Constraints()
+        # ComparisonConstraint(Label, [">", ">=", "<", "<="], LabelOrConstant)
+        # MaxConstraint(List[Label], ["max", "notmax", "min", "notmin"])
+        # Label: yN
+        # Constant: Nf
 
-def read_vnnlib_simple(filename):
-    vars_in = 0
-    vars_out = 0
-    statements = vnnlib_base.read_statements(filename)
-    regex_declare_in = re.compile(r"^\(declare-const X_(\S+) Real\)$")
-    regex_declare_out = re.compile(r"^\(declare-const Y_(\S+) Real\)$")
-    for statement in statements:
-        if regex_declare_in.match(statement):
-            vars_in += 1
-        elif regex_declare_out.match(statement):
-            vars_out += 1
-    return vnnlib_base.read_vnnlib_simple(filename, vars_in, vars_out)
+        for i in range(len(self.mat)):
+            mat: np.ndarray = self.mat[i]
+            rhs: np.ndarray = self.rhs[i]
+            for row in range(mat.shape[0]):
+                labels = np.nonzero(mat[row])[0]
+                print("L", labels)
+                if rhs[row] == 0 and len(labels) == 2: #  Comparison between two labels
+                    label1 = labels[0]
+                    label2 = labels[1]
+                    if mat[row][label1] * mat[row][label2] != -1:
+                        raise UnrepresentableVNNLibError("Cannot sum labels in a constraint")
+                    sign = np.sign(mat[row][label1])
+                    op = "<=" if sign == 1 else ">"
+                    constraints.add(ComparisonConstraint(Label(label1), op, Label(label2)))
+                elif len(labels) == 1: #  Comparison between label and constant
+                    label = labels[0]
+                    sign = np.sign(mat[row][label])
+                    const = rhs[row] / abs(mat[row][label])
+                    op = "<=" if sign == 1 else ">"
+                    constraints.add(ComparisonConstraint(Label(label), op, Constant(const)))
+                elif rhs[row] >= 0 and len(labels) == 0: #  Null op
+                    pass
+                elif len(labels) > 1:
+                    raise UnrepresentableVNNLibError("Cannot sum labels in a constraint")
+        return constraints
+# TODO: Make a ConstraintsTransformer for the vnnlib library
+
+
 

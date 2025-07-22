@@ -4,7 +4,7 @@ import os
 import json
 from pathlib import Path
 from verapak.parse_args import strategy_registry
-from verapak.utilities.vnnlib_lib import VNNLib, NonMaximalVNNLibError
+from verapak.utilities.vnnlib_lib import VNNLib, NonMaximalVNNLibError, UnrepresentableVNNLibError
 from verapak.parse_args.types import type_string_to_type
 from config import ConfigValueError
 
@@ -114,9 +114,9 @@ class FileParser:
 def _getThreads():
     """ Returns the number of available threads on a posix/win based system """
     if sys.platform == 'win32':
-        return (int)(os.environ['NUMBER_OF_PROCESSORS'])
+        return int(os.environ['NUMBER_OF_PROCESSORS'])
     else:
-        return (int)(os.popen('grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu').read())
+        return int(os.popen('grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu').read())
 
 
 def parse_file_args(config_file):
@@ -126,10 +126,13 @@ def parse_vnnlib_args(vnnlib_file):
     try:
         vnn = VNNLib(vnnlib_file)
         domain = vnn.get_domain()
+        constraints = vnn.get_constraints()
+        print(constraints)
         return {
                 "initial_point": vnn.get_centerpoint().tolist(),
-                "label": vnn.get_intended_class(),
+                #"label": vnn.get_intended_class(),
                 "radius": vnn.get_radii().tolist(),
+                "constraints": constraints,
                 "domain_lower_bound": domain[0],
                 "domain_upper_bound": domain[1]
         }
@@ -186,9 +189,11 @@ def parse_args(args, prog):
             if colorize:
                 ex.colorize()
             print(ex)
+            print("A")
             file_args = {"error": "bad_config_args"}
         except ValueError as ex:
             print(ex.args)
+            print("A")
             file_args = {"error": "bad_config_args"}
     else:
         file_args = None
@@ -202,7 +207,10 @@ def parse_args(args, prog):
             vnnlib_args = None
     except NonMaximalVNNLibError as ex:
         vnnlib_args = {"error": "nonmaximal"}
-    except:
+    except UnrepresentableVNNLibError as ex:
+        vnnlib_args = {"error": "unrepresentable"}
+    except Exception as ex:
+        print(ex)
         vnnlib_args = {"error": "bad_vnnlib_args"}
 
     args = combine_args([*SUPPORTED_ARGUMENTS, *get_strategy_groups_supported()], vars(cmd_args), file_args, vnnlib_args)

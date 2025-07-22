@@ -2,6 +2,8 @@ import os
 import sys
 import traceback
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 from config import Config, ConfigError
 from verapak.parse_args.tools import parse_args

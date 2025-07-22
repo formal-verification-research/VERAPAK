@@ -95,7 +95,7 @@ class ConfigError(Exception):
         s = error_color + "Error in keys:\n"
         for bad_key, reason in self.bad_key_dict.items():
             s += f"  {key_color}{bad_key}{no_color}: {error_color}{reason}\n"
-        
+
         if len(self.missing_errors) > 0:
             s += f"{no_color}REASON: {error_color}{ConfigError.REASON_MISSING}\n"
             for bad_key, (valid, reason) in self.missing_errors.items():
@@ -181,7 +181,7 @@ def evaluate_args(args):
     # Reshape radius
     if v["radius"] is not None:
         v["radius"] = np.array(v["radius"], dtype=v["graph"].input_dtype).reshape(v["graph"].input_shape)
-        
+
     # Compute initial_region
     radius = v["radius"]
     region_bounds = [args.get("region_lower_bound"), args.get("region_upper_bound")]
@@ -209,7 +209,7 @@ def evaluate_args(args):
                 radius = np.full(v["graph"].input_shape, radius[0])
             else:
                 radius = np.array(radius).reshape(v["graph"].input_shape).astype(v["graph"].input_dtype)
-            
+
             v["initial_region"] = Region(v["initial_point"] - radius, v["initial_point"] + radius, RegionData.EMPTY)
         elif region_bounds[0] is not None:
             if len(region_bounds[0]) == 1:
@@ -229,17 +229,30 @@ def evaluate_args(args):
     initial_point = args.get("initial_point")
     constraint_file = args.get("constraint_file")
     label = args.get("label")
+    constraints = args.get("constraints")
 
-    if initial_point is None and constraint_file is None and label is None:
-        errors.missing_any(("constraint_file", "label", "initial_point"), reason="Must set at least one of constraint_file, label, or initial_point (in order to derive validity constraints)")
+    if initial_point is None and constraint_file is None and label is None and constraints is None:
+        errors.missing_any(("constraint_file", "label", "initial_point", "constraints"), reason="Must set at least one of constraint_file, label, initial_point, or constraints (in order to derive validity constraints)")
     elif constraint_file is not None and label is not None:
         errors.conflicting(("constraint_file", "label"), (constraint_file, label), reason="Cannot set both constraint_file and label")
+    elif int(constraint_file is not None) + int(label is not None) + int(constraints is not None) > 1:
+        conflicting = ([],[])
+        for k, v in [("constraint_file", constraint_file), ("label", label), ("constraints", constraints)]:
+            if v is not None:
+                conflicting[0].append(k)
+                conflicting[1].append(v)
+        errors.conflicting(conflicting[0], conflicting[1], reason="Must set only one of constraint_file, label, or constraints")
 
     if len(errors) == 0:
         if label is not None:
             constraints = Constraints.from_label(label)
         elif constraint_file is not None:
             constraints = Constraints.from_constraint_file(constraint_file)
+        elif constraints is not None:
+            if type(constraints) == str:
+                constraints = Constraints.from_text(constraints)
+            else:
+                constraints = Constraints.from_object(constraints)
         else:
             constraints = Constraints.from_label(np.argmax(v["graph"].evaluate(v["initial_point"])))
 
@@ -269,4 +282,4 @@ def evaluate_args(args):
         raise errors
 
     return v
-    
+
