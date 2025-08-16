@@ -168,6 +168,51 @@ struct optional_ndarray_from_python {
     }
 };
 
+// Serialization support for Region
+struct Region_pickle_suite : boost::python::pickle_suite
+{
+    static boost::python::tuple getinitargs(const Region& r)
+    {
+        return boost::python::make_tuple(r.low, r.high, r.data);
+    }
+};
+
+// Serialization support for RegionData
+// -- Necessary for serialization of Region
+struct RegionData_pickle_suite : boost::python::pickle_suite
+{
+    static boost::python::tuple getstate(const RegionData& r)
+    {
+        return boost::python::make_tuple(
+            r.confidence,
+            r.confidence_parent,
+            r.confidence_grandparent,
+            r.siblings_equal,
+            r.recursion_depth,
+            r.adversarial_example,
+            r.initialized
+        );
+    }
+
+    static void setstate(RegionData& r, boost::python::tuple state)
+    {
+        
+        if (boost::python::len(state) != 7)
+        {
+            PyErr_SetString(PyExc_ValueError, "Invalid state for unpickling: wrong number of elements.");
+            boost::python::throw_error_already_set();
+        }
+
+        r.confidence = boost::python::extract<float>(state[0]);
+        r.confidence_parent = boost::python::extract<float>(state[1]);
+        r.confidence_grandparent = boost::python::extract<float>(state[2]);
+        r.siblings_equal = boost::python::extract<bool>(state[3]);
+        r.recursion_depth = boost::python::extract<int>(state[4]);
+        r.set_adversarial_example(boost::python::extract<boost::optional<np::ndarray>>(state[5]));
+        r.initialized = boost::python::extract<bool>(state[6]);
+    }
+};
+
 /* ===== BOOST_PYTHON_MODULE ===== */
 BOOST_PYTHON_MODULE(verapak_utils) {
     Py_Initialize();
@@ -187,7 +232,8 @@ BOOST_PYTHON_MODULE(verapak_utils) {
         .add_property("adversarial_example", &RegionData::get_adversarial_example, &RegionData::set_adversarial_example)
         .def_readonly("initialized", &RegionData::initialized)
         .def_readonly("EMPTY", &RegionData_EMPTY)
-	.def("make_child", &RegionData::make_child);
+        .def_pickle(RegionData_pickle_suite())
+	    .def("make_child", &RegionData::make_child);
     py::to_python_converter<boost::optional<float>, optional_float_to_python>();
     py::to_python_converter<boost::optional<np::ndarray>, optional_ndarray_to_python>();
     optional_ndarray_from_python::register_converter();
@@ -200,7 +246,8 @@ BOOST_PYTHON_MODULE(verapak_utils) {
         .def_readwrite("data", &Region::data)
         .def("__contains__", &Region::contains_point)
         .add_property("size", &Region::size)
-        .add_property("shape", &Region::shape);
+        .add_property("shape", &Region::shape)
+        .def_pickle(Region_pickle_suite());
 
     // RegionSet class
     py::class_<RegionSet>("RegionSet")
