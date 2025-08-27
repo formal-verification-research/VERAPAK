@@ -106,10 +106,10 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
         if not safety_predicate(point):
             if point_in_region(region, point):
                 sets[SOME_UNSAFE](region, point, area, from_=from_)
-                break
-        else:
-            # All abstracted points were safe
-            sets[UNKNOWN](region, area, from_=from_)
+                return # Adversarial found - Add to some unsafe and exit falsify
+
+    # All abstracted points were safe
+    sets[UNKNOWN](region, area, from_=from_)
 
 
 TREND_EPSILON = 0.01
