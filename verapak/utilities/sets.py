@@ -29,6 +29,23 @@ class WrappedRegionSet:
         return self.set.append(v)
     def __len__(self):
         return len(self.set)
+class WrappedRegionQueue:
+    def __init__(self, reporter, name):
+        self.reporter = reporter
+        self.name = name
+        self.queue = deque()
+    def __call__(self, region, area, from_=None):
+        self.append(region)
+        if from_ is not None:
+            self.reporter.move_area(from_, self.name, area)
+        else:
+            self.reporter.add_area(self.name, area)
+    def get_next(self):
+        return self.queue.popleft()
+    def append(self, v):
+        return self.queue.append(v)
+    def __len__(self):
+        return len(self.queue)
 class WrappedErrorRegionQueue:
     def __init__(self, reporter, name):
         self.reporter = reporter
@@ -58,7 +75,7 @@ DISPLAY_NAMES = {
 }
 def make_sets(reporter):
     return {
-        UNKNOWN: WrappedRegionSet(reporter, UNKNOWN),
+        UNKNOWN: WrappedRegionQueue(reporter, UNKNOWN),
         ALL_SAFE: WrappedRegionSet(reporter, ALL_SAFE),
         ALL_UNSAFE: WrappedRegionSet(reporter, ALL_UNSAFE),
         SOME_UNSAFE: WrappedErrorRegionQueue(reporter, SOME_UNSAFE),
