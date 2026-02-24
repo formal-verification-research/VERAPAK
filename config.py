@@ -144,7 +144,7 @@ def evaluate_args(args):
         "initial_point": args.get("initial_point"), # RESHAPED
         "radius": args.get("radius"), # RESHAPED, REMOVED
         "strategy": {
-            "abstraction": args["abstraction_strategy"](),
+            "falsification": args["falsification_strategy"](),
             "partitioning": args["partitioning_strategy"](),
             "verification": args["verification_strategy"](),
         },
