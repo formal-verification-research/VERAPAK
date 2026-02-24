@@ -72,11 +72,11 @@ def verify(config, region, area, sets, from_=UNKNOWN):
             falsify(config, partition, sets['reporter'].get_area(partition), sets, from_=from_)
 
 def falsify(config, region, area, sets, from_=UNKNOWN):
-    falsification_engine = config['strategy']['falsification'].abstract
+    abstraction_engine = config['strategy']['abstraction'].abstract
     n = config['num_abstractions']
     safety_predicate = config['safety_predicate']
 
-    abstractions = falsification_engine(region, n)
+    abstractions = abstraction_engine(region, n)
 
     for point in abstractions:
         if not safety_predicate(point):
