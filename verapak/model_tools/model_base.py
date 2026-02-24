@@ -43,7 +43,7 @@ def load_graph_by_type(graph_path, graph_type):
 
 def output_to_loss(output, label_tf):
     max_out = np.max(output.numpy())
-    max_in = np.min(output.numpy())
+    min_out = np.min(output.numpy())
     from_logits = max_out > 1 or min_out < 0
     loss = tf.losses.categorical_crossentropy(
         label_tf, output, from_logits=from_logits)
