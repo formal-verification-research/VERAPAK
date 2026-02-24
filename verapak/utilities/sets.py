@@ -57,7 +57,8 @@ class WrappedErrorRegionQueue:
             self.reporter.move_area(from_, self.name, area)
         else:
             self.reporter.add_area(self.name, area)
-        self.reporter.add_adversarial_example(e)
+        if e is not None:
+            self.reporter.add_adversarial_example(e)
     def get_next(self):
         return self.queue.popleft()
     def append(self, v):
@@ -75,10 +76,9 @@ DISPLAY_NAMES = {
 }
 def make_sets(reporter):
     return {
-        UNKNOWN: WrappedRegionQueue(reporter, UNKNOWN),
+        UNKNOWN: WrappedErrorRegionQueue(reporter, UNKNOWN),
         ALL_SAFE: WrappedRegionSet(reporter, ALL_SAFE),
         ALL_UNSAFE: WrappedRegionSet(reporter, ALL_UNSAFE),
-        SOME_UNSAFE: WrappedErrorRegionQueue(reporter, SOME_UNSAFE),
         BOUNDARY: WrappedRegionSet(reporter, BOUNDARY),
         "reporter": reporter,
     }
