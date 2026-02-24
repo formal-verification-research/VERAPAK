@@ -76,7 +76,7 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
     n = config['num_abstractions']
     safety_predicate = config['safety_predicate']
 
-    abstractions = abstraction_engine(region, n)
+    abstractions = falsification_engine(region, n)
 
     for point in abstractions:
         if not safety_predicate(point):
