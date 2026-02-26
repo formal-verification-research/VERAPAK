@@ -82,7 +82,7 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
         if not safety_predicate(point):
             # TODO: Move the point in region check to the falsification engines
             if point_in_region(region, point):
-                sets[UNKNOWN](region, point, area, from_=from_)
+                sets[SOME_UNSAFE](region, point, area, from_=from_)
                 break
         else:
             # All abstracted points were safe
