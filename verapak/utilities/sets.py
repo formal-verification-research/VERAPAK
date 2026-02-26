@@ -112,7 +112,7 @@ class Reporter:
         self.total_area = 1                                  # <-- which has a hypervolume of exactly 1
         self.ignore = ignored # Before using np.prod or dividing, remove ignored dimensions
                               # Either by adding ignore to the numerator and denominator on each, or filtering them out
-        self.adversarial_examples = verapak_utils.PointSet()
+        self.adversarial_examples = []
         assert self.total_area > 0, "Initial region has no or negative area"
 
     def move_area(self, set_from, set_to, amount):
@@ -133,7 +133,7 @@ class Reporter:
         show = None
         if example is not None:
             print("Found adversarial example @ ", elapsed_time)
-            self.adversarial_examples.insert(example)
+            self.adversarial_examples.append(example)
             show = ["loose", "strict"]
         if example is None:
             show = ["loose"]
