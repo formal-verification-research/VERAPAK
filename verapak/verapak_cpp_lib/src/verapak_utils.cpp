@@ -207,9 +207,3 @@ BOOST_PYTHON_MODULE(verapak_utils) {
         .def(py::vector_indexing_suite<std::vector<Region>>())
         .def("get_region_containing_point", &RegionSet_get_region_containing_point,
                         py::return_internal_reference<>()); // Warning - if this region is destroyed by C++, it will cause issues in Python
-
-    // PointSet class
-    py::class_<PointSet>("PointSet")
-        .def(py::vector_indexing_suite<std::vector<Point>>());
-}
-
