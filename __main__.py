@@ -24,10 +24,10 @@ def create_witness(config, adversarial_example):
 def write_results(config, adversarial_examples, halt_reason, elapsed_time):
     witness = ""
     adv_count = 0
-    if adversarial_examples and adversarial_examples.size() > 0:
-        witness = create_witness(next(adversarial_examples.elements()))
-        adv_count = adversarial_examples.size()
-        adv_examples_numpy = np.array([x for x in adversarial_examples.elements()])
+    if adversarial_examples and len(adversarial_examples) > 0:
+        witness = create_witness(config, adversarial_examples[0])
+        adv_count = len(adversarial_examples)
+        adv_examples_numpy = np.array(adversarial_examples)
         output_file = os.path.join(config['output_dir'], 'adversarial_examples.npy')
         np.save(output_file, adv_examples_numpy)
     if halt_reason in ["done", "first"]:
