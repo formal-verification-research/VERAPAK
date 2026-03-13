@@ -67,6 +67,13 @@ def verify(config, region, area, sets, from_=UNKNOWN):
 
     verification, adv_example = verification_engine(region)
 
+    # Some verification engines can only return certain options
+    #                 | ALL_SAFE | ALL_UNSAFE | UNKNOWN | SOME_UNSAFE |
+    #            ERAN |    Y     |      Y     |    Y    |      N      |
+    # Discrete Search |    Y     |      Y     |    Y    |      Y      |
+    # 
+    # For engines that can reach SOME_UNSAFE (such as Discrete Search), we can get 
+    #  a list of adversarial examples without needing a falsification engine.
     if verification == ALL_SAFE or verification == ALL_UNSAFE:
         sets[verification](region, area, from_=from_)
     elif verification == SOME_UNSAFE:
