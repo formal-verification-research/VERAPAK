@@ -43,12 +43,19 @@ def main(config, reporter):
 
         if adv_example is not None: # We grabbed an unsafe region
             partitions = config['strategy']['partitioning'].partition(region)
+            some_unsafe = []
             for r in partitions:
+                if point_in_region(r, adv_example):
+                    some_unsafe.append(r)
+                else:
+                    # We don't need to move any area, since it's coming from the same place
+                    sets[UNKNOWN](r, None, 0, from_=UNKNOWN)
+            for r in some_unsafe: # Should only be one region
                 r_area = reporter.get_area(r)
-                sets[UNKNOWN](r, None if not point_in_region(r, adv_example) else adv_example)
-            continue
-
-        verify(config, region, region_area, sets)
+                verify(config, r, r_area, sets)
+                
+        else: # We grabbed an unknown region
+            verify(config, region, region_area, sets)
 
     if timed_out():
         reporter.halt_reason = "timeout"
@@ -56,12 +63,17 @@ def main(config, reporter):
         reporter.halt_reason = "done"
 
 def verify(config, region, area, sets, from_=UNKNOWN):
-    # TODO: Check confidence level, and sometimes send directly to Falsify
-
     verification_engine = config['strategy']['verification'].verify
 
     verification, adv_example = verification_engine(region)
 
+    # Some verification engines can only return certain options
+    #                 | ALL_SAFE | ALL_UNSAFE | UNKNOWN | SOME_UNSAFE |
+    #            ERAN |    Y     |      Y     |    Y    |      N      |
+    # Discrete Search |    Y     |      Y     |    Y    |      Y      |
+    # 
+    # For engines that can reach SOME_UNSAFE (such as Discrete Search), we can get 
+    #  a list of adversarial examples without needing a falsification engine.
     if verification == ALL_SAFE or verification == ALL_UNSAFE:
         sets[verification](region, area, from_=from_)
     elif verification == SOME_UNSAFE:
@@ -79,9 +91,9 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
     abstractions = abstraction_engine(region, n)
 
     for point in abstractions:
-        if not safety_predicate(point):
-            # TODO: Move the point in region check to the falsification engines
-            if point_in_region(region, point):
+        # TODO: Move the point in region check to the falsification engines
+        if point_in_region(region, point):
+            if not safety_predicate(point):
                 sets[UNKNOWN](region, point, area, from_=from_)
                 break
         else:
