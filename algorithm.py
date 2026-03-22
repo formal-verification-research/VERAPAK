@@ -96,6 +96,6 @@ def falsify(config, region, area, sets, from_=UNKNOWN):
             if not safety_predicate(point):
                 sets[UNKNOWN](region, point, area, from_=from_)
                 break
-        else:
-            # All abstracted points were safe
-            sets[UNKNOWN](region, None, area, from_=from_)
+    else:
+        # All abstracted points were safe
+        sets[UNKNOWN](region, None, area, from_=from_)
