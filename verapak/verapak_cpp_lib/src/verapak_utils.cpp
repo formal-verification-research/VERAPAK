@@ -13,7 +13,7 @@ Region::Region(
         const Point& high
 ) :
     low(low),
-    high(high)
+    high(high) {}
 
 bool Region::contains_point(const Point& point) const {
     int ndim = point.get_nd();
