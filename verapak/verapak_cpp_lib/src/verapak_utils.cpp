@@ -59,11 +59,9 @@ BOOST_PYTHON_MODULE(verapak_utils) {
     py::class_<Point>("Point", py::init<np::ndarray>());
 
     // Region class
-    py::class_<Region>("Region", py::init<Point, Point, RegionData>())
-        .def(py::init<Point, Point, Region>())
+    py::class_<Region>("Region", py::init<Point, Point>())
         .def_readwrite("low", &Region::low)
         .def_readwrite("high", &Region::high)
-        .def_readwrite("data", &Region::data)
         .def("__contains__", &Region::contains_point)
         .add_property("size", &Region::size)
         .add_property("shape", &Region::shape);
