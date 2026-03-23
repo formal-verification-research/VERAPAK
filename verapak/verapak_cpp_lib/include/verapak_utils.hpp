@@ -24,7 +24,7 @@ struct Region {
     // Constructor
     Region(
         const Point& low,
-        const Point& high,
+        const Point& high
     );
 
     // Function to check if a point is contained in the region
