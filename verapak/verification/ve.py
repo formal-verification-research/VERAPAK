@@ -20,19 +20,15 @@ class VerificationEngine:
         else:
             return UNKNOWN, None
 
+    _last_region = None
+    _last_result = None
     def get_result(self, region, use_cache=True):
-        if use_cache:
-            if region.data.initialized:
-                return region.data.confidence, region.data.adversarial_example
+        if use_cache and self._last_region == region:
+            return self._last_result
         result = self.verification_impl(region)
-        if type(result) is tuple:
-            region.data.confidence = result[0]
-            region.data.adversarial_example = result[1]
-            return result
-        else:
-            region.data.confidence = result
-            region.data.adversarial_example = None
-            return result, region.data.adversarial_example # TODO: For testing. Just return `result, None`
+        self._last_region = region
+        self._last_result = result
+        return result
     def get_percent(self, region, use_cache=True):
         return self.get_result(region, use_cache=use_cache)[0]
     def get_adv_example(self, region, use_cache=True):

@@ -21,7 +21,7 @@ def hierarchicalDimensionRefinement(region, dim_select_strategy, num_dims, divis
                 high = r.high.copy()
                 high[curIndex] = low[curIndex] + sizeIncrement
 
-                newRetVal.append(Region(low, high, region.data.make_child()))
+                newRetVal.append(Region(low, high))
         retVal = newRetVal
     return retVal
 
