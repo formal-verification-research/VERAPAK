@@ -1,6 +1,6 @@
 import numpy as np
 from verapak import snap
-from verapak.constraints import SafetyPredicate, Constraints
+from verapak.constraints import SafetyPredicate, Constraint
 from verapak.model_tools.model_base import load_graph_by_type
 from verapak_utils import Region
 
@@ -237,16 +237,13 @@ def evaluate_args(args):
 
     if len(errors) == 0:
         if label is not None:
-            constraints = Constraints.from_label(label)
+            constraints = Constraint.from_label(label)
         elif constraint_file is not None:
-            constraints = Constraints.from_constraint_file(constraint_file)
+            constraints = Constraint.from_constraint_file(constraint_file)
         else:
-            constraints = Constraints.from_label(np.argmax(v["graph"].evaluate(v["initial_point"])))
+            constraints = Constraint.from_label(np.argmax(v["graph"].evaluate(v["initial_point"])))
 
-        v["safety_predicate"] = SafetyPredicate(
-            np.prod(v["graph"].output_shape),
-            v["graph"].evaluate,
-            constraints=constraints)
+        v["safety_predicate"] = SafetyPredicate(v["graph"].evaluate, constraints)
 
     # Compute gradient_function
     if len(errors) == 0:
