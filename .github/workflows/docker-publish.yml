@@ -77,31 +77,34 @@ jobs:
       - name: Get architecture tag
         id: arch
         run: |
-          echo "str=${{ env.TARGET_ARCH }}$(if [ '${{ env.TARGET_OS }}' != 'unknown-unknown' ]; then echo '-${{ env.TARGET_OS }}'; fi)"
-          echo "is_default=$(if [ '${{ env.TARGET_ARCH }}' == 'x86_64' ] && [ '${{ env.TARGET_OS }}' == 'unknown-unknown' ]; then echo 'true'; else echo 'false'; fi)"
+          echo "str=${{ env.TARGET_ARCH }}$(if [ '${{ env.TARGET_OS }}' != 'unknown-unknown' ]; then echo '-${{ env.TARGET_OS }}'; fi)" >> $GITHUB_OUTPUT
+          echo "is_default=$(if [ '${{ env.TARGET_ARCH }}' == 'x86_64' ] && [ '${{ env.TARGET_OS }}' == 'unknown-unknown' ]; then echo 'true'; else echo 'false'; fi)" >> $GITHUB_OUTPUT
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        env:
+          TARGET_STR: ${{ steps.arch.outputs.str }}
+          ENABLE_NO_SUFFIX: ${{ steps.arch.outputs.is_default }}
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=schedule,suffix=-${{ steps.arch.outputs.str }}
-            type=semver,pattern={{version}},suffix=+${{ steps.arch.outputs.str }}
-            type=semver,pattern={{major}}.{{minor}},suffix=+${{ steps.arch.outputs.str }}
-            type=semver,pattern={{major}},suffix=+${{ steps.arch.outputs.str }}
-            type=ref,event=branch,suffix=-${{ steps.arch.outputs.str }}
-            type=ref,event=pr,suffix=-${{ steps.arch.outputs.str }}
-            type=raw,value=dev,suffix=-${{ steps.arch.outputs.str }}
-            type=schedule,enable=${{ steps.arch.outputs.is_default }}
-            type=semver,pattern={{version}},enable=${{ steps.arch.outputs.is_default }}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.arch.outputs.is_default }}
-            type=semver,pattern={{major}},enable=${{ steps.arch.outputs.is_default }}
-            type=ref,event=branch,enable=${{ steps.arch.outputs.is_default }}
-            type=ref,event=pr,enable=${{ steps.arch.outputs.is_default }}
-            type=raw,value=dev,enable=${{ steps.arch.outputs.is_default }}
+            type=schedule,suffix=-$TARGET_STR
+            type=semver,pattern={{version}},suffix=+$TARGET_STR
+            type=semver,pattern={{major}}.{{minor}},suffix=+$TARGET_STR
+            type=semver,pattern={{major}},suffix=+$TARGET_STR
+            type=ref,event=branch,suffix=-$TARGET_STR
+            type=ref,event=pr,suffix=-$TARGET_STR
+            type=raw,value=dev,suffix=-$TARGET_STR
+            type=schedule,enable=$ENABLE_NO_SUFFIX
+            type=semver,pattern={{version}},enable=$ENABLE_NO_SUFFIX
+            type=semver,pattern={{major}}.{{minor}},enable=$ENABLE_NO_SUFFIX
+            type=semver,pattern={{major}},enable=$ENABLE_NO_SUFFIX
+            type=ref,event=branch,enable=$ENABLE_NO_SUFFIX
+            type=ref,event=pr,enable=$ENABLE_NO_SUFFIX
+            type=raw,value=dev,enable=$ENABLE_NO_SUFFIX
             
 
       # Build and push Docker image with Buildx (don't push on PR)
