@@ -78,7 +78,7 @@ jobs:
         id: arch
         run: |
           echo "str=${{ env.TARGET_ARCH }}$(if [ '${{ env.TARGET_OS }}' != 'unknown-unknown' ]; then echo '-${{ env.TARGET_OS }}'; fi)"
-          echo "is_default=$([ '${{ env.TARGET_ARCH }}' == 'x86_64' ] && [ '${{ env.TARGET_OS }}' == 'unknown-unknown' ])"
+          echo "is_default=$(if [ '${{ env.TARGET_ARCH }}' == 'x86_64' ] && [ '${{ env.TARGET_OS }}' == 'unknown-unknown' ]; then echo 'true'; else echo 'false'; fi)"
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
