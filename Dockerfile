@@ -1,6 +1,10 @@
 # syntax=docker/dockerfile:labs
 FROM tensorflow/tensorflow:2.11.0
 ARG USE_GPU=""
+ARG TARGET_ARCH="x86_64"
+ARG TARGET_OS="unknown-unknown"
+ENV CFLAGS="-march=$TARGET_ARCH"
+ENV CXXFLAGS="-march=$TARGET_ARCH"
 RUN python3 --version
 
 RUN apt-get update && apt-get install -y git wget python3-dev && pip install -U pip
@@ -23,7 +27,9 @@ COPY githubKey /root/.ssh/known_hosts
 
 ADD https://github.com/yodarocks1/eran.git /src/eran/
 WORKDIR /src/eran
-RUN if [ -z "$USE_GPU" ]; then ./install.sh; else ./install.sh --use-cuda; fi
+RUN find . -type f \( -name "CMakeLists.txt" -o -name "Makefile*" -o -name "*.sh" -o -name "configure" \) \
+    -exec sed -i 's/-march=native/-march=$TARGET_ARCH/g' {} +
+RUN if [ -z "$USE_GPU" ]; then ./install.sh --arch=$TARGET_ARCH --os=$TARGET_OS; else ./install.sh --use-cuda --arch=$TARGET_ARCH --os=$TARGET_OS; fi
 RUN bash -c "source ./gurobi_setup_path.sh"
 ENV PYTHONPATH="/src/eran/gurobi912/linux64/lib/python3.8_utf32/:/src/eran/python_interface/:${PYTHONPATH}"
 
@@ -34,6 +40,6 @@ RUN ln /src/VERAPAK/docker.bashrc /root/.bashrc
 RUN ln -s /src/VERAPAK/examples /root/examples
 RUN cat /src/VERAPAK/githubKey >> /root/.ssh/known_hosts
 
-RUN mkdir /src/VERAPAK/_build && cd /src/VERAPAK/_build && cmake .. && make install -j12
+RUN mkdir /src/VERAPAK/_build && cd /src/VERAPAK/_build && cmake -DCMAKE_C_FLAGS="-march=$TARGET_ARCH" -DCMAKE_CXX_FLAGS="-march=$TARGET_ARCH" .. && make install -j12
 
 WORKDIR /root
