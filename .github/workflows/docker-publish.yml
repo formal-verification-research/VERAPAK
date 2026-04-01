@@ -12,9 +12,23 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      targetArch:
+        description: "Target architecture"
+        type: string
+        required: true
+        default: "x86_64"
+      targetOS:
+        description: "Target operating system (VENDOR-OS)"
+        type: string
+        required: false
+      
 
 env:
   IMAGE_NAME: yodarocks1/verapak
+  TARGET_ARCH: ${{ inputs.targetArch || 'x86_64' }}
+  TARGET_OS: ${{ inputs.targetOS || 'unknown-unknown' }}
 
 
 jobs:
@@ -58,6 +72,14 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Creates the string representation of the current architecture
+      # Outputs: str, is_default
+      - name: Get architecture tag
+        id: arch
+        run: |
+          echo "str=${{ env.TARGET_ARCH }}$(if [ '${{ env.TARGET_OS }}' != 'unknown-unknown' ]; then echo '-${{ env.TARGET_OS }}'; fi)"
+          echo "is_default=$([ '${{ env.TARGET_ARCH }}' == 'x86_64' ] && [ '${{ env.TARGET_OS }}' == 'unknown-unknown' ])"
+
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
@@ -66,14 +88,21 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=schedule
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=ref,event=branch
-            type=ref,event=pr
-            type=raw,value=dev
-            type=sha
+            type=schedule,suffix=-${{ steps.arch.outputs.str }}
+            type=semver,pattern={{version}},suffix=+${{ steps.arch.outputs.str }}
+            type=semver,pattern={{major}}.{{minor}},suffix=+${{ steps.arch.outputs.str }}
+            type=semver,pattern={{major}},suffix=+${{ steps.arch.outputs.str }}
+            type=ref,event=branch,suffix=-${{ steps.arch.outputs.str }}
+            type=ref,event=pr,suffix=-${{ steps.arch.outputs.str }}
+            type=raw,value=dev,suffix=-${{ steps.arch.outputs.str }}
+            type=schedule,enable=${{ steps.arch.outputs.is_default }}
+            type=semver,pattern={{version}},enable=${{ steps.arch.outputs.is_default }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.arch.outputs.is_default }}
+            type=semver,pattern={{major}},enable=${{ steps.arch.outputs.is_default }}
+            type=ref,event=branch,enable=${{ steps.arch.outputs.is_default }}
+            type=ref,event=pr,enable=${{ steps.arch.outputs.is_default }}
+            type=raw,value=dev,enable=${{ steps.arch.outputs.is_default }}
+            
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
@@ -87,6 +116,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            TARGET_ARCH=${{ env.TARGET_ARCH }}
+            TARGET_OS=${{ env.TARGET_OS }}
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
