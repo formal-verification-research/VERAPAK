@@ -2,7 +2,7 @@
 FROM tensorflow/tensorflow:2.11.0
 ARG USE_GPU=""
 ARG TARGET_ARCH="x86_64"
-ARG TARGET_OS="unknown-unknown"
+ARG TARGET_OS="pc-linux-gnu"
 ENV CFLAGS="-march=$TARGET_ARCH"
 ENV CXXFLAGS="-march=$TARGET_ARCH"
 RUN python3 --version
