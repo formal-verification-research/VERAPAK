@@ -91,20 +91,20 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=schedule,suffix=-$TARGET_STR
-            type=semver,pattern={{version}},suffix=+$TARGET_STR
-            type=semver,pattern={{major}}.{{minor}},suffix=+$TARGET_STR
-            type=semver,pattern={{major}},suffix=+$TARGET_STR
-            type=ref,event=branch,suffix=-$TARGET_STR
-            type=ref,event=pr,suffix=-$TARGET_STR
-            type=raw,value=dev,suffix=-$TARGET_STR
-            type=schedule,enable=$ENABLE_NO_SUFFIX
-            type=semver,pattern={{version}},enable=$ENABLE_NO_SUFFIX
-            type=semver,pattern={{major}}.{{minor}},enable=$ENABLE_NO_SUFFIX
-            type=semver,pattern={{major}},enable=$ENABLE_NO_SUFFIX
-            type=ref,event=branch,enable=$ENABLE_NO_SUFFIX
-            type=ref,event=pr,enable=$ENABLE_NO_SUFFIX
-            type=raw,value=dev,enable=$ENABLE_NO_SUFFIX
+            type=schedule,suffix=-${{ env.TARGET_STR }}
+            type=semver,pattern={{version}},suffix=+${{ env.TARGET_STR }}
+            type=semver,pattern={{major}}.{{minor}},suffix=+${{ env.TARGET_STR }}
+            type=semver,pattern={{major}},suffix=+${{ env.TARGET_STR }}
+            type=ref,event=branch,suffix=-${{ env.TARGET_STR }}
+            type=ref,event=pr,suffix=-${{ env.TARGET_STR }}
+            type=raw,value=dev,suffix=-${{ env.TARGET_STR }}
+            type=schedule,enable=${{ env.ENABLE_NO_SUFFIX }}
+            type=semver,pattern={{version}},enable=${{ env.ENABLE_NO_SUFFIX }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ env.ENABLE_NO_SUFFIX }}
+            type=semver,pattern={{major}},enable=${{ env.ENABLE_NO_SUFFIX }}
+            type=ref,event=branch,enable=${{ env.ENABLE_NO_SUFFIX }}
+            type=ref,event=pr,enable=${{ env.ENABLE_NO_SUFFIX }}
+            type=raw,value=dev,enable=${{ env.ENABLE_NO_SUFFIX }}
             
 
       # Build and push Docker image with Buildx (don't push on PR)
