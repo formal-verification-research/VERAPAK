@@ -22,7 +22,8 @@ on:
       targetOS:
         description: "Target operating system (VENDOR-OS)"
         type: string
-        required: false
+        required: true
+        default: "pc-linux-gnu"
       
 
 env:
