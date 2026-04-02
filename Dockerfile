@@ -25,7 +25,7 @@ RUN apt-get -y install m4 autoconf libtool texlive-latex-base
 RUN apt-get -y install vim
 COPY githubKey /root/.ssh/known_hosts
 
-ADD https://github.com/yodarocks1/eran.git /src/eran/
+ADD https://github.com/yodarocks1/eran.git#with-dependencies /src/eran/
 WORKDIR /src/eran
 RUN find . -type f \( -name "CMakeLists.txt" -o -name "Makefile*" -o -name "*.sh" -o -name "configure" \) \
     -exec sed -i 's/-march=native/-march=$TARGET_ARCH/g' {} +
