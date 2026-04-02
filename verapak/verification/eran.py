@@ -27,7 +27,7 @@ class ERAN(VerificationEngine):
     def verification_impl(self, region):
         specLB = region.low
         specUB = region.high
-        percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, self.safety_predicate.constraints)
+        percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, self.safety_predicate.constraint)
         return percent
 
     def set_config(self, v):
