@@ -18,7 +18,7 @@ on:
         description: "Target architecture"
         type: string
         required: true
-        default: "x86_64"
+        default: "x86-64"
       targetOS:
         description: "Target operating system (VENDOR-OS)"
         type: string
@@ -28,7 +28,7 @@ on:
 
 env:
   IMAGE_NAME: yodarocks1/verapak
-  TARGET_ARCH: ${{ inputs.targetArch || 'x86_64' }}
+  TARGET_ARCH: ${{ inputs.targetArch || 'x86-64' }}
   TARGET_OS: ${{ inputs.targetOS || 'pc-linux-gnu' }}
 
 
