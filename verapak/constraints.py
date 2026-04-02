@@ -31,7 +31,7 @@ class SafetyPredicate:
             return True
 
     def __repr__(self):
-        return str(self.num_labels) + "\n" + repr(self.constraints)
+        return repr(self.constraint)
 
     def best_case_scenario(self, output):
         """
@@ -40,5 +40,6 @@ class SafetyPredicate:
         if not self.constraint(output):
             return self.constraint.nearest_satisfactory_point(output)
         else:
-            return self.constraint.get_optimal_points[0]
+            raise NotImplementedError("SafetyPredicate needs to either get or find a reasonable goal min and max for each output")
+            return self.constraint.get_optimal_points()[0]
 
