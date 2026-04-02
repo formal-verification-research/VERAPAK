@@ -79,7 +79,7 @@ jobs:
         id: arch
         run: |
           echo "str=${{ env.TARGET_ARCH }}$(if [ '${{ env.TARGET_OS }}' != 'pc-linux-gnu' ]; then echo '-${{ env.TARGET_OS }}'; fi)" >> $GITHUB_OUTPUT
-          echo "is_default=$(if [ '${{ env.TARGET_ARCH }}' == 'x86_64' ] && [ '${{ env.TARGET_OS }}' == 'pc-linux-gnu' ]; then echo 'true'; else echo 'false'; fi)" >> $GITHUB_OUTPUT
+          echo "is_default=$(if [ '${{ env.TARGET_ARCH }}' == 'x86-64' ] && [ '${{ env.TARGET_OS }}' == 'pc-linux-gnu' ]; then echo 'true'; else echo 'false'; fi)" >> $GITHUB_OUTPUT
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
