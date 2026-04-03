@@ -28,7 +28,7 @@ class ERAN(VerificationEngine):
         specLB = region.low
         specUB = region.high
         percent, nn, nlb, nub, _, _ = self.eran.analyze_box(specLB, specUB, "deeppoly", 1, 1, True, self.safety_predicate.constraint)
-        return percent
+        return percent, None # ERAN never returns a witness
 
     def set_config(self, v):
         super().set_config(v)
