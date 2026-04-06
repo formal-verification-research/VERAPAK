@@ -236,10 +236,10 @@ def evaluate_args(args):
         errors.conflicting(("constraint_file", "label"), (constraint_file, label), reason="Cannot set both constraint_file and label")
 
     if len(errors) == 0:
-        if label is not None:
-            constraints = Constraint.from_label(label)
-        elif constraint_file is not None:
+        if constraint_file is not None:
             constraints = Constraint.from_constraint_file(constraint_file)
+        elif label is not None:
+            constraints = Constraint.from_label(label)
         else:
             constraints = Constraint.from_label(np.argmax(v["graph"].evaluate(v["initial_point"])))
 
@@ -247,7 +247,18 @@ def evaluate_args(args):
 
     # Compute gradient_function
     if len(errors) == 0:
-        v["gradient_function"] = lambda point: v["graph"].gradient_of_loss_wrt_input(point, v["safety_predicate"].best_case_scenario(point))
+        if label is not None:
+            label_numpy = np.zeros(v["graph"].output_shape)
+            label_numpy[label] = 1
+        elif initial_point is not None:
+            label_numpy = v["safety_predicate"].best_case_scenario(v["graph"].evaluate(initial_point))
+        else:
+            get_label = lambda point: v["safety_predicate"].best_case_scenario(v["graph"].evaluate(point))
+            
+        if label_numpy is not None:
+            v["gradient_function"] = lambda point: v["graph"].gradient_of_loss_wrt_input(point, label_numpy)
+        else:
+            v["gradient_function"] = lambda point: v["graph"].gradient_of_loss_wrt_input(point, get_label(point))
 
     # Compute ignored_dimensions
     def is_ignored(x): return x == 0
