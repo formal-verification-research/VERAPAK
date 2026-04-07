@@ -249,7 +249,7 @@ def evaluate_args(args):
     if len(errors) == 0:
         if label is not None:
             label_numpy = np.zeros(v["graph"].output_shape)
-            label_numpy[label] = 1
+            label_numpy[np.unravel_index(label, v["graph"].output_shape)] = 1
         elif initial_point is not None:
             label_numpy = v["safety_predicate"].best_case_scenario(v["graph"].evaluate(initial_point))
         else:
