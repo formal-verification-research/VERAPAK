@@ -63,19 +63,8 @@ class ModFGSM(AbstractionEngine):
         grad = self.gradient_function(center)
         gradient_sign = np.sign(grad)
 
-        min_dimension_range, min_dimension_index = _min_dim(region, self.ignored_dimensions)
-        # Divide by 1.25 probably to keep points within the region, not on the borders.
-        max_radius = min_dimension_range / 1.25
-
-        if self.granularity is None:
-            e1_lowerbound = np.nextafter(1, 0)
-            e1_upperbound = max_radius
-        else:
-            e1_lowerbound = 1
-            e1_upperbound = max_radius / self.granularity[min_dimension_index]
-        #print(max_radius)
-        #print(self.granularity[min_dimension_index])
-        #print(max_radius / self.granularity[min_dimension_index])
+        e1_lowerbound = np.nextafter(0, 1) # Minimum step is > 0
+        e1_upperbound = 1                  # Maximum step is the whole radius
 
         if self.balance_factor >= 1:
             M = np.full(region.shape, True)
@@ -102,10 +91,9 @@ class ModFGSM(AbstractionEngine):
 
         retVal = []
         for _ in range(0, num_abstractions):
-            if self.granularity is None:
-                current_epsilon = np.random.uniform(e1_lowerbound, e1_upperbound)
-            else:
-                current_epsilon = self.granularity[min_dimension_index] * np.random.randint(e1_lowerbound, e1_upperbound)
+            current_epsilon = np.random.uniform(e1_lowerbound, e1_upperbound) * (region.high - region.low) / 2
+            if self.granularity is not None:
+                current_epsilon = np.ceil(current_epsilon / self.granularity) * self.granularity
             R = np.random.randint(0, 2, size=center.shape) * 2 - 1
             mod_part = np.where(Mnot, R, 0)
             scaled_part = current_epsilon * (fgsm_part + mod_part)
